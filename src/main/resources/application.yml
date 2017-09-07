@@ -1,0 +1,11 @@
+server:
+  port: 9607
+spring:
+  freemarker:
+    cache: true
+    charset: UTF-8
+    check-template-location: true
+    content-type: text/html
+    expose-request-attributes: true
+    expose-session-attributes: true
+    request-context-attribute: request

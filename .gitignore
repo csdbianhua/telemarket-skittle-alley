@@ -1,6 +1,8 @@
 target/
 .mvn
 mvnw*
+logs/
+data/
 
 ### STS ###
 .apt_generated
