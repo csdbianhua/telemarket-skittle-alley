@@ -49,9 +49,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration>
-                            <finalName>${project.name}-${project.version}</finalName>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
