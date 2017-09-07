@@ -9,4 +9,5 @@ if [ -z "${jar_name}" ]; then
     echo 不存在服务主文件,请检查文件完整性
     exit
 fi
-java -jar ${jar_name}
+nohup java -jar ${jar_name} >/dev/null 2>&1 &
+echo 服务已在启动中...
