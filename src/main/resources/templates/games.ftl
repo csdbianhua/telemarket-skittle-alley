@@ -9,7 +9,7 @@
 <#include "common/navbar.ftl"/>
 <div class="container-fluid">
 <#list games as game>
-    <img width="200" height="200" src="/image/games/${game.identify}.jpg"/>
+    <img width="200" height="200" src="/asserts/image/games/${game.identify}.jpg"/>
     <a style="font-size: large" href="/games/${game.identify}">${game.name}</a>
 </#list>
 </div>

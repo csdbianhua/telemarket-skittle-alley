@@ -3,7 +3,7 @@
 <head>
 <#include "../common/common_head.ftl">
     <title>你画我猜</title>
-    <link rel="stylesheet" href="/css/games/draw_guess.css">
+    <link rel="stylesheet" href="/asserts/css/games/draw_guess.css">
 </head>
 <body>
 <#assign name="games"/>
@@ -61,7 +61,7 @@
 
     </div>
 <#include "../common/common_foot.ftl">
-    <script src="/js/cm/sockjs-1.1.1.min.js"></script>
-    <script src="/js/games/draw_guess.js"></script>
+    <script src="/asserts/js/cm/sockjs-1.1.1.min.js"></script>
+    <script src="/asserts/js/games/draw_guess.js"></script>
 </body>
 </html>

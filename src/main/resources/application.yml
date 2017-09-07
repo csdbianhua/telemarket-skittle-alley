@@ -9,3 +9,5 @@ spring:
     expose-request-attributes: true
     expose-session-attributes: true
     request-context-attribute: request
+  mvc:
+    static-path-pattern: /asserts/**
