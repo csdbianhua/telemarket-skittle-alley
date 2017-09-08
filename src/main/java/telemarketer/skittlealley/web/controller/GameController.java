@@ -38,6 +38,8 @@ public class GameController {
         if (!info.isPresent()) {
             return "redirect:/games";
         }
+        model.addAttribute("games", gameService.getGames());
+        model.addAttribute("identify", identify);
         model.addAllAttributes(info.get().getAttrs());
         return "games/" + identify;
     }
