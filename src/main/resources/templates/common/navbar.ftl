@@ -4,9 +4,11 @@
             <span class="navbar-brand">Telemarketer Skittle-Alley</span>
         </div>
         <div class="collapse navbar-collapse">
-        <#assign url_name = (name!"")/>
             <ul class="nav navbar-nav">
-                <li <#if url_name = "games">class="active"</#if>><a href="/games">联机游戏</a></li>
+            <#list games as game>
+                <li <#if url_name = "games">class="active"</#if>><a href="/games/${game.identify}">${game.name}</a></li>
+            </#list>
+            <#--<img width="200" height="200" src="/asserts/image/games/${game.identify}.jpg"/>-->
             </ul>
         </div>
     </div>

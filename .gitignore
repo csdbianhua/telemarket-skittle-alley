@@ -3,6 +3,7 @@ target/
 mvnw*
 logs/
 data/
+/src/main/java/telemarketer/skittlealley/web/controller/AdminApi.java
 
 ### STS ###
 .apt_generated
