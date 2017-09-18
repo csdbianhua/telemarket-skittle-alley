@@ -11,3 +11,5 @@ spring:
     request-context-attribute: request
   mvc:
     static-path-pattern: /asserts/**
+mybatis:
+  mapper-locations: mapper/*.xml

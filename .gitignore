@@ -18,3 +18,5 @@ data/
 *.iws
 *.iml
 *.ipr
+/config/mybatisGenerator.xml
+/src/main/resources/config/production/

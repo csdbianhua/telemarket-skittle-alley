@@ -77,7 +77,9 @@ public class DrawGuessWebSocket extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         TextMessage result = null;
         try {
+            System.out.println(message.getPayload());
             String text = drawGuess.handleRequest(message.getPayload(), session);
+            System.out.println(text);
             if (StringUtils.isNotBlank(text)) {
                 result = new TextMessage(text);
             } else {

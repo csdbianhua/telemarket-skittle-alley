@@ -1,5 +1,6 @@
 package telemarketer.skittlealley.service;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -32,7 +33,7 @@ public class GameService {
             Game annotation = aClass.getAnnotation(Game.class);
             String name = annotation.gameName();
             String value = annotation.value();
-            JSONObject attrs = JSONObject.parseObject(annotation.attrs());
+            JSONObject attrs = JSON.parseObject(annotation.attrs());
             GameInfo gameInfo = new GameInfo().setName(name).setIdentify(value);
             for (Map.Entry<String, Object> entry : attrs.entrySet()) {
                 gameInfo.putAttr(entry.getKey(), entry.getValue());

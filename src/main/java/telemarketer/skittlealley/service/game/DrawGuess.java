@@ -14,7 +14,8 @@ import telemarketer.skittlealley.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.persist.dao.DrawWordRepository;
+import telemarketer.skittlealley.persist.mybatis.dao.DrawWordDao;
+import telemarketer.skittlealley.persist.mybatis.domain.DrawWord;
 import telemarketer.skittlealley.service.common.ApiResponseFactory;
 import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
@@ -42,15 +43,15 @@ public class DrawGuess extends MessageHandler {
 
     public static final String IDENTIFY = "draw_guess";
     private final ObjectPool<ApiResponse> apiResponsePool;
-    private final DrawWordRepository repository;
     private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
+
+    private final DrawWordDao dao;
 
     @Autowired
     public DrawGuess(ApplicationContext context,
-                     ApiResponseFactory apiResponseFactory,
-                     DrawWordRepository repository) {
+                     ApiResponseFactory apiResponseFactory, DrawWordDao dao) {
         this.apiResponsePool = new GenericObjectPool<>(apiResponseFactory);
-        this.repository = repository;
+        this.dao = dao;
         HashMap<Integer, RequestHandler> handlers = new HashMap<>();
         String[] beans = context.getBeanNamesForAnnotation(DrawGuessEventHandler.class);
         for (String bean : beans) {
@@ -97,13 +98,13 @@ public class DrawGuess extends MessageHandler {
         return context;
     }
 
-    private DrawWord randomWord() {
-        long count = repository.count();
-        double result = Math.random() * count;
-        int ceil = (int) Math.ceil(result);
-        DrawWord word = repository.findOne(ceil);
-        word.setWordCount(word.getWord().length());
-        return word;
+    private DrawWordInfo randomWord() {
+        DrawWord drawWord = dao.randomWord();
+        DrawWordInfo info = new DrawWordInfo();
+        info.setWord(drawWord.getWord());
+        info.setWordType(drawWord.getWordTip());
+        info.setWordCount(drawWord.getWord().length());
+        return info;
     }
 
     /**

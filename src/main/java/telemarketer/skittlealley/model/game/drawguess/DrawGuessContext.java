@@ -19,7 +19,7 @@ public class DrawGuessContext {
     public static final String DEFAULT_COLOR = "blue";
     private String currentUser;
     private DrawGameStatus status;
-    private DrawWord currentWord;
+    private DrawWordInfo currentWord;
     private Long endTime;
     private Map<String, DrawPlayerInfo> players = Collections.synchronizedMap(new LinkedHashMap<>());
     private Integer width = DEFAULT_WIDTH;
@@ -138,11 +138,11 @@ public class DrawGuessContext {
         return this;
     }
 
-    public DrawWord getCurrentWord() {
+    public DrawWordInfo getCurrentWord() {
         return currentWord;
     }
 
-    public DrawGuessContext setCurrentWord(DrawWord currentWord) {
+    public DrawGuessContext setCurrentWord(DrawWordInfo currentWord) {
         this.currentWord = currentWord;
         return this;
     }

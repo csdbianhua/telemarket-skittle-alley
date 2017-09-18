@@ -1,22 +1,12 @@
 package telemarketer.skittlealley.model.game.drawguess;
 
-import com.alibaba.fastjson.annotation.JSONField;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
 /**
  * Author: Hanson
  * Time: 17-2-11
  * Email: imyijie@outlook.com
  */
-@Entity
-public class DrawWord {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @JSONField(serialize = false, deserialize = false)
+public class DrawWordInfo {
+
     private Integer id;
     private String word;
     private Integer wordCount;
