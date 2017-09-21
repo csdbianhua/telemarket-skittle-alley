@@ -15,7 +15,9 @@ import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.persist.mybatis.dao.DrawWordDao;
+import telemarketer.skittlealley.persist.mybatis.dao.DrawWordMapper;
 import telemarketer.skittlealley.persist.mybatis.domain.DrawWord;
+import telemarketer.skittlealley.persist.mybatis.domain.DrawWordExample;
 import telemarketer.skittlealley.service.common.ApiResponseFactory;
 import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
@@ -46,12 +48,14 @@ public class DrawGuess extends MessageHandler {
     private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
 
     private final DrawWordDao dao;
+    private final DrawWordMapper mapper;
 
     @Autowired
     public DrawGuess(ApplicationContext context,
-                     ApiResponseFactory apiResponseFactory, DrawWordDao dao) {
+                     ApiResponseFactory apiResponseFactory, DrawWordDao dao, DrawWordMapper mapper) {
         this.apiResponsePool = new GenericObjectPool<>(apiResponseFactory);
         this.dao = dao;
+        this.mapper = mapper;
         HashMap<Integer, RequestHandler> handlers = new HashMap<>();
         String[] beans = context.getBeanNamesForAnnotation(DrawGuessEventHandler.class);
         for (String bean : beans) {
@@ -301,6 +305,16 @@ public class DrawGuess extends MessageHandler {
             return true;
         } else {
             return false;
+        }
+    }
+
+    public void saveWord(DrawWord word) {
+        DrawWordExample ex = new DrawWordExample();
+        ex.createCriteria().andWordEqualTo(word.getWord());
+        if (mapper.countByExample(ex) > 0) {
+            mapper.updateByExampleSelective(word, ex);
+        } else {
+            mapper.insertSelective(word);
         }
     }
 }

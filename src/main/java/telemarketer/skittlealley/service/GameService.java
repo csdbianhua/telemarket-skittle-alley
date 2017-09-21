@@ -29,7 +29,12 @@ public class GameService {
         String[] beans = context.getBeanNamesForAnnotation(Game.class);
         Map<String, GameInfo> info = new LinkedHashMap<>();
         for (String bean : beans) {
-            Class<?> aClass = context.getBean(bean).getClass();
+            Class<?> aClass;
+            try {
+                aClass = Class.forName(context.getBean(bean).getClass().getName().split("\\$")[0]);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
             Game annotation = aClass.getAnnotation(Game.class);
             String name = annotation.gameName();
             String value = annotation.value();

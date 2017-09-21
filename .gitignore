@@ -20,3 +20,4 @@ data/
 *.ipr
 /config/mybatisGenerator.xml
 /src/main/resources/config/production/
+/src/main/resources/rebel.xml
