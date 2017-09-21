@@ -24,10 +24,7 @@ import telemarketer.skittlealley.service.common.RequestHandler;
 import telemarketer.skittlealley.service.game.draw.DrawGuessEventHandler;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -308,13 +305,16 @@ public class DrawGuess extends MessageHandler {
         }
     }
 
-    public void saveWord(DrawWord word) {
+    public Optional<String> saveWord(DrawWord word) {
         DrawWordExample ex = new DrawWordExample();
         ex.createCriteria().andWordEqualTo(word.getWord());
-        if (mapper.countByExample(ex) > 0) {
+        DrawWord exist = mapper.selectOneByExample(ex);
+        if (exist != null) {
             mapper.updateByExampleSelective(word, ex);
+            return Optional.of(exist.getWordTip());
         } else {
             mapper.insertSelective(word);
         }
+        return Optional.empty();
     }
 }

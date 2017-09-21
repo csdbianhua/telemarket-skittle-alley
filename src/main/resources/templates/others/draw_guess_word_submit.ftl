@@ -10,12 +10,12 @@
 <div class="container">
     <form class="col-lg-4 col-lg-offset-4" data-toggle="validator" method="post">
     <#if tip??>
-        <div class="alert alert-success" role="alert">${tip}</div>
+        <div class="alert alert-success" id="save_alert" role="alert">${tip}</div>
     </#if>
         <div class="form-group has-feedback">
             <label for="word">词汇</label>
             <input type="text" class="form-control" required
-                   maxlength="10" id="word" name="word">
+                   maxlength="10" id="word" name="word" <#if tip??>onblur="$('#save_alert').hide()"</#if>>
             <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
             <div class="help-block with-errors"></div>
         </div>

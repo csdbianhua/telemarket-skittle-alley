@@ -12,6 +12,7 @@ import telemarketer.skittlealley.service.GameService;
 import telemarketer.skittlealley.service.game.DrawGuess;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * @author hason
@@ -46,8 +47,12 @@ public class IndexController {
 
     @PostMapping("/draw_guess_word_submit")
     public String drawGuessWordSubmitPost(DrawWord drawWord, Model model) {
-        drawGuess.saveWord(drawWord);
-        model.addAttribute("tip", "保存成功");
+        Optional<String> oldTip = drawGuess.saveWord(drawWord);
+        if (oldTip.isPresent()) {
+            model.addAttribute("tip", "更新成功,原提示为:" + oldTip.get());
+        } else {
+            model.addAttribute("tip", "新增成功");
+        }
         return "others/draw_guess_word_submit";
     }
 
