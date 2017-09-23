@@ -75,7 +75,6 @@ $(function () {
 
     websocket.onmessage = function (event) {
         var res = JSON.parse(event.data);
-        time_offset = event.timeStamp - new Date().getTime();
         msg_processors[res.code.toString()](res);
     };
     websocket.onopen = function () {
@@ -121,6 +120,10 @@ $(function () {
         if (ctxGame.status !== GAME_READY) {
             disableUserBtn(true);
             updateCtx(ctxGame);
+        }
+        if (data.timestamp) {
+            time_offset = data.timestamp - new Date().getTime();
+            console.log("初始化服务器时间差" + time_offset + "ms");
         }
     }
 

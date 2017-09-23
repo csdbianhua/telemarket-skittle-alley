@@ -2,6 +2,7 @@ package telemarketer.skittlealley.service.game;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -14,7 +15,6 @@ import telemarketer.skittlealley.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.persist.mybatis.dao.DrawWordDao;
 import telemarketer.skittlealley.persist.mybatis.dao.DrawWordMapper;
 import telemarketer.skittlealley.persist.mybatis.domain.DrawWord;
 import telemarketer.skittlealley.persist.mybatis.domain.DrawWordExample;
@@ -44,14 +44,12 @@ public class DrawGuess extends MessageHandler {
     private final ObjectPool<ApiResponse> apiResponsePool;
     private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
 
-    private final DrawWordDao dao;
     private final DrawWordMapper mapper;
 
     @Autowired
     public DrawGuess(ApplicationContext context,
-                     ApiResponseFactory apiResponseFactory, DrawWordDao dao, DrawWordMapper mapper) {
+                     ApiResponseFactory apiResponseFactory, DrawWordMapper mapper) {
         this.apiResponsePool = new GenericObjectPool<>(apiResponseFactory);
-        this.dao = dao;
         this.mapper = mapper;
         HashMap<Integer, RequestHandler> handlers = new HashMap<>();
         String[] beans = context.getBeanNamesForAnnotation(DrawGuessEventHandler.class);
@@ -100,7 +98,11 @@ public class DrawGuess extends MessageHandler {
     }
 
     private DrawWordInfo randomWord() {
-        DrawWord drawWord = dao.randomWord();
+        long count = mapper.countByExample(null);
+        int select = RandomUtils.nextInt(0, (int) count);
+        DrawWordExample ex = new DrawWordExample();
+        ex.createCriteria().andIdGreaterThan(select);
+        DrawWord drawWord = mapper.selectOneByExample(ex);
         DrawWordInfo info = new DrawWordInfo();
         info.setWord(drawWord.getWord());
         info.setWordType(drawWord.getWordTip());

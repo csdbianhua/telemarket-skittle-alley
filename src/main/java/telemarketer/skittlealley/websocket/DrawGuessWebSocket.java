@@ -19,6 +19,7 @@ import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.service.game.DrawGuess;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -61,6 +62,7 @@ public class DrawGuessWebSocket extends TextWebSocketHandler {
                 .collect(Collectors.toList()));
         obj.put("ctx", ctx);
         obj.put("assign", true);
+        obj.put("timestamp", Instant.now().toEpochMilli());
         sendTo(transformToMsg(ApiResponse.code(DrawCode.USER_JOIN.getCode(), obj)), id);
     }
 

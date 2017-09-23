@@ -27,6 +27,6 @@ public class ApiResponseFactory extends BasePooledObjectFactory<ApiResponse> {
 
     @Override
     public void passivateObject(PooledObject<ApiResponse> p) throws Exception {
-        p.getObject().setData(null).setCode(null);
+        p.getObject().clear();
     }
 }

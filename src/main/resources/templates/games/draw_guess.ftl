@@ -62,6 +62,6 @@
     </div>
 <#include "../common/common_foot.ftl">
     <script src="/asserts/js/cm/sockjs-1.1.1.min.js"></script>
-    <script src="/asserts/js/games/draw_guess.js"></script>
+    <script src="/asserts/js/games/draw_guess.js?v=1"></script>
 </body>
 </html>
