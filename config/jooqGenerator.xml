@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration xmlns="http://www.jooq.org/xsd/jooq-codegen-3.10.0.xsd">
+    <!-- Configure the database connection here -->
+
+    <generator>
+        <database>
+            <name>org.jooq.meta.extensions.ddl.DDLDatabase</name>
+            <properties>
+                <property>
+                    <key>scripts</key>
+                    <value>src/main/resources/sql/database.sql</value>
+                </property>
+            </properties>
+
+        </database>
+
+
+        <generate>
+            <javaTimeTypes>true</javaTimeTypes>
+            <pojos>true</pojos>
+            <pojosToString>true</pojosToString>
+            <globalSchemaReferences>false</globalSchemaReferences>
+            <globalCatalogReferences>false</globalCatalogReferences>
+            <indexes>false</indexes>
+            <relations>false</relations>
+            <links>false</links>
+        </generate>
+        <strategy>
+            <matchers>
+                <tables>
+                    <table>
+                        <expression/>
+                        <tableClass>
+                            <transform>PASCAL</transform>
+                            <expression>$0_table</expression>
+                        </tableClass>
+                    </table>
+                    <table>
+                        <expression>^(.*)(ies)$</expression>
+                        <pojoClass>
+                            <transform>PASCAL</transform>
+                            <expression>$1y</expression>
+                        </pojoClass>
+                    </table>
+                    <table>
+                        <expression>^(.*)(s)$</expression>
+                        <pojoClass>
+                            <transform>PASCAL</transform>
+                            <expression>$1</expression>
+                        </pojoClass>
+                    </table>
+                </tables>
+            </matchers>
+        </strategy>
+        <target>
+
+            <packageName>telemarketer.skittlealley.persist</packageName>
+
+            <directory>generate/jooq/</directory>
+        </target>
+
+    </generator>
+</configuration>

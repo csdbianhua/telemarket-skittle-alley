@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:public
+    platform: h2
+    data: classpath:sql/data.sql
+    schema: classpath:sql/database.sql
+  jpa:
+    hibernate:
+      ddl-auto: update

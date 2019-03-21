@@ -1,4 +1,0 @@
-druid:
-  url: jdbc:mysql://localhost:3306/skittlealley
-  user: root
-  pwd: root

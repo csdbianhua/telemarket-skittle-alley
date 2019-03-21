@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.aspect;
+package telemarketer.skittlealley.framework.aspect;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
@@ -18,7 +18,7 @@ import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.model.game.drawguess.DrawPlayerInfo;
 import telemarketer.skittlealley.service.game.DrawGuess;
-import telemarketer.skittlealley.websocket.DrawGuessWebSocket;
+import telemarketer.skittlealley.web.websocket.DrawGuessWebSocket;
 
 /**
  * 你画我猜游戏过程控制

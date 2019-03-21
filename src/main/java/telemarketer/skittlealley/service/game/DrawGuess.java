@@ -6,26 +6,33 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.socket.WebSocketSession;
-import telemarketer.skittlealley.annotation.Game;
+import telemarketer.skittlealley.framework.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.persist.mybatis.dao.DrawWordMapper;
-import telemarketer.skittlealley.persist.mybatis.domain.DrawWord;
-import telemarketer.skittlealley.persist.mybatis.domain.DrawWordExample;
+import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
 import telemarketer.skittlealley.service.common.ApiResponseFactory;
 import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
 import telemarketer.skittlealley.service.game.draw.DrawGuessEventHandler;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
+
 
 /**
  * 你画我猜游戏
@@ -44,13 +51,14 @@ public class DrawGuess extends MessageHandler {
     private final ObjectPool<ApiResponse> apiResponsePool;
     private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
 
-    private final DrawWordMapper mapper;
+    private final DSLContext sql;
 
     @Autowired
     public DrawGuess(ApplicationContext context,
-                     ApiResponseFactory apiResponseFactory, DrawWordMapper mapper) {
+                     ApiResponseFactory apiResponseFactory,
+                     DSLContext sql) {
         this.apiResponsePool = new GenericObjectPool<>(apiResponseFactory);
-        this.mapper = mapper;
+        this.sql = sql;
         HashMap<Integer, RequestHandler> handlers = new HashMap<>();
         String[] beans = context.getBeanNamesForAnnotation(DrawGuessEventHandler.class);
         for (String bean : beans) {
@@ -98,11 +106,9 @@ public class DrawGuess extends MessageHandler {
     }
 
     private DrawWordInfo randomWord() {
-        long count = mapper.countByExample(null);
-        int select = RandomUtils.nextInt(0, (int) count);
-        DrawWordExample ex = new DrawWordExample();
-        ex.createCriteria().andIdGreaterThan(select);
-        DrawWord drawWord = mapper.selectOneByExample(ex);
+        int count = sql.selectCount().from(DRAW_WORD).fetchOneInto(Integer.class);
+        int select = RandomUtils.nextInt(0, count);
+        DrawWord drawWord = sql.selectOne().from(DRAW_WORD).where(DRAW_WORD.ID.ge(select)).fetchOneInto(DrawWord.class);
         DrawWordInfo info = new DrawWordInfo();
         info.setWord(drawWord.getWord());
         info.setWordType(drawWord.getWordTip());
@@ -307,16 +313,14 @@ public class DrawGuess extends MessageHandler {
         }
     }
 
-    public Optional<String> saveWord(DrawWord word) {
-        DrawWordExample ex = new DrawWordExample();
-        ex.createCriteria().andWordEqualTo(word.getWord());
-        DrawWord exist = mapper.selectOneByExample(ex);
-        if (exist != null) {
-            mapper.updateByExampleSelective(word, ex);
-            return Optional.of(exist.getWordTip());
-        } else {
-            mapper.insertSelective(word);
+    public void saveWord(DrawWord word) {
+        try {
+            sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip()).onDuplicateKeyUpdate()
+                    .set(DRAW_WORD.WORD_TIP, word.getWordTip())
+                    .execute();
+        } catch (DuplicateKeyException e) {
+            sql.update(DRAW_WORD).set(DRAW_WORD.WORD_TIP, word.getWordTip()).where(DRAW_WORD.WORD.eq(word.getWord())).execute();
         }
-        return Optional.empty();
+
     }
 }

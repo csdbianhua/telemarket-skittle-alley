@@ -9,7 +9,7 @@
             <Pattern>${CONSOLE_LOG_PATTERN}</Pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>TRACE</level>
+            <level>INFO</level>
         </filter>
     </appender>
     <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">

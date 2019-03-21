@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.config;
+package telemarketer.skittlealley.framework.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import telemarketer.skittlealley.annotation.WSHandler;
+import telemarketer.skittlealley.framework.annotation.WSHandler;
 
 /**
  * webSocket 配置

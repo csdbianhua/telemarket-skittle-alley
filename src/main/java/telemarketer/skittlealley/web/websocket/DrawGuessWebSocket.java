@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.websocket;
+package telemarketer.skittlealley.web.websocket;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
@@ -12,7 +12,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import telemarketer.skittlealley.annotation.WSHandler;
+import telemarketer.skittlealley.framework.annotation.WSHandler;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
