@@ -3,7 +3,7 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <logger name="org.springframework.web" level="INFO"/>
     <property name="log_dir" value="logs"/>
-    <property name="maxHistory" value="30"/>
+    <property name="maxHistory" value="1"/>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <Pattern>${CONSOLE_LOG_PATTERN}</Pattern>

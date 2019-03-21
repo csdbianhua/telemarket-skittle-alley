@@ -108,7 +108,7 @@ public class DrawGuess extends MessageHandler {
     private DrawWordInfo randomWord() {
         int count = sql.selectCount().from(DRAW_WORD).fetchOneInto(Integer.class);
         int select = RandomUtils.nextInt(0, count);
-        DrawWord drawWord = sql.selectOne().from(DRAW_WORD).where(DRAW_WORD.ID.ge(select)).fetchOneInto(DrawWord.class);
+        DrawWord drawWord = sql.selectFrom(DRAW_WORD).where(DRAW_WORD.ID.ge(select)).limit(1).fetchOneInto(DrawWord.class);
         DrawWordInfo info = new DrawWordInfo();
         info.setWord(drawWord.getWord());
         info.setWordType(drawWord.getWordTip());
