@@ -3,7 +3,14 @@ package telemarketer.skittlealley.model.game.drawguess;
 import com.alibaba.fastjson.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,11 +32,15 @@ public class DrawGuessContext {
     private Integer width = DEFAULT_WIDTH;
     private String color = DEFAULT_COLOR;
     @JSONField(serialize = false, deserialize = false)
-    private final Timer timer = new Timer();
+    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1, r -> {
+        Thread t = new Thread();
+        t.setName("DrawGuessTimer");
+        return t;
+    });
     @JSONField(serialize = false, deserialize = false)
-    private TimerTask timerTask;
+    private ScheduledFuture<?> timerTask;
     @JSONField(serialize = false, deserialize = false)
-    private final ReentrantLock lock = new ReentrantLock(true); // 锁
+    private final ReentrantLock lock = new ReentrantLock(true);
     private final AtomicInteger rightNumber = new AtomicInteger(0);
     @JSONField(serialize = false, deserialize = false)
     private final AtomicInteger drawNumber = new AtomicInteger(0);
@@ -156,28 +167,26 @@ public class DrawGuessContext {
         return this;
     }
 
-    public void startTimerTask(TimerTask timerTask, long time) {
-        timer.schedule(timerTask, new Date(time));
-        this.timerTask = timerTask;
+    public void startTimerTask(Runnable timerTask, long time) {
+        this.timerTask = executor.schedule(timerTask, System.currentTimeMillis() - time, TimeUnit.MILLISECONDS);
     }
 
     public void cancelTimerTask() {
         if (this.timerTask != null) {
-            timerTask.cancel(); // 取消任务(正在执行不影响)
-            timerTask = null; // 扔给垃圾回收
+            timerTask.cancel(false);
+            timerTask = null;
         }
     }
 
-    public DrawGuessContext clearGameInfo() {
+    public void clearGameInfo() {
         rightNumber.set(0);
         width = DEFAULT_WIDTH;
         color = DEFAULT_COLOR;
         currentWord = null;
         currentUser = null;
-        return this;
     }
 
-    public DrawGuessContext clearAll() {
+    public void clearAll() {
         cancelTimerTask();
         status = DrawGameStatus.READY;
         endTime = null;
@@ -185,7 +194,6 @@ public class DrawGuessContext {
         getPlayers().forEach(DrawPlayerInfo::clearScore);
         players = Collections.synchronizedMap(new LinkedHashMap<>());
         clearGameInfo();
-        return this;
     }
 
 }

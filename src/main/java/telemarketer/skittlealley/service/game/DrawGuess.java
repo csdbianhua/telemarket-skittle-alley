@@ -4,31 +4,24 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.framework.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
-import telemarketer.skittlealley.service.common.ApiResponseFactory;
 import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
-import telemarketer.skittlealley.service.game.draw.DrawGuessEventHandler;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
@@ -48,28 +41,24 @@ public class DrawGuess extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
     public static final String IDENTIFY = "draw_guess";
-    private final ObjectPool<ApiResponse> apiResponsePool;
     private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
 
     private final DSLContext sql;
+    private final ThreadPoolExecutor executor;
 
     @Autowired
-    public DrawGuess(ApplicationContext context,
-                     ApiResponseFactory apiResponseFactory,
-                     DSLContext sql) {
-        this.apiResponsePool = new GenericObjectPool<>(apiResponseFactory);
+    public DrawGuess(List<RequestHandler> handlers,
+                     DSLContext sql,
+                     ThreadPoolExecutor executor) {
         this.sql = sql;
-        HashMap<Integer, RequestHandler> handlers = new HashMap<>();
-        String[] beans = context.getBeanNamesForAnnotation(DrawGuessEventHandler.class);
-        for (String bean : beans) {
-            RequestHandler handler = context.getBean(bean, RequestHandler.class);
-            DrawGuessEventHandler annotation = handler.getClass().getAnnotation(DrawGuessEventHandler.class);
-            DrawCode[] value = annotation.value();
-            for (DrawCode drawCode : value) {
-                handlers.put(drawCode.getCode(), handler);
+        this.executor = executor;
+        HashMap<Integer, RequestHandler> handlerMap = new HashMap<>();
+        for (RequestHandler handler : handlers) {
+            for (DrawCode drawCode : handler.supported()) {
+                handlerMap.put(drawCode.getCode(), handler);
             }
         }
-        setRequestHandlers(handlers);
+        setRequestHandlers(handlerMap);
     }
 
     /**
@@ -116,34 +105,6 @@ public class DrawGuess extends MessageHandler {
         return info;
     }
 
-    /**
-     * 从对象池借一个ApiResponse对象
-     *
-     * @return 借用对象
-     */
-    public ApiResponse borrowObject() {
-        try {
-            return apiResponsePool.borrowObject();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * 将ApiResponse还给对象池
-     *
-     * @param response 对象
-     */
-    public void returnObject(ApiResponse response) {
-        if (response == null) {
-            return;
-        }
-        try {
-            apiResponsePool.returnObject(response);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * 处理web socket请求
@@ -155,16 +116,13 @@ public class DrawGuess extends MessageHandler {
     @Override
     public String handleRequest(String payload, WebSocketSession session) {
         ApiRequest request = JSONObject.parseObject(payload, ApiRequest.class);
-        ApiResponse response = null;
+        ApiResponse response = new ApiResponse();
         try {
-            response = borrowObject();
             handle(request, response, session);
             return response.empty() ? StringUtils.EMPTY : JSONObject.toJSONString(response);
         } catch (RuntimeException e) {
             LOGGER.error("[{}]处理请求异常", IDENTIFY, e);
             return StringUtils.EMPTY;
-        } finally {
-            returnObject(response);
         }
 
     }
@@ -194,7 +152,7 @@ public class DrawGuess extends MessageHandler {
         long endTime = Instant.now().toEpochMilli() + DrawGameStatus.RUN.getSpendTime();
         ctx.setEndTime(endTime);
         ctx.setCurrentWord(randomWord());
-        TimerTask timerTask = new TimerTask() {
+        Runnable timerTask = new TimerTask() {
             @Override
             public void run() {
                 processToWait(ctx);
@@ -313,14 +271,10 @@ public class DrawGuess extends MessageHandler {
         }
     }
 
-    public void saveWord(DrawWord word) {
-        try {
-            sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip()).onDuplicateKeyUpdate()
-                    .set(DRAW_WORD.WORD_TIP, word.getWordTip())
-                    .execute();
-        } catch (DuplicateKeyException e) {
-            sql.update(DRAW_WORD).set(DRAW_WORD.WORD_TIP, word.getWordTip()).where(DRAW_WORD.WORD.eq(word.getWord())).execute();
-        }
+    public CompletionStage<Integer> saveWord(DrawWord word) {
+        return sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip()).onDuplicateKeyUpdate()
+                .set(DRAW_WORD.WORD_TIP, word.getWordTip())
+                .executeAsync(executor);
 
     }
 }

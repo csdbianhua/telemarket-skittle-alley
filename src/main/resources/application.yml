@@ -9,10 +9,15 @@ spring:
     expose-request-attributes: true
     expose-session-attributes: true
     request-context-attribute: request
-  mvc:
-    static-path-pattern: /asserts/**
   datasource:
     url: jdbc:h2:./db/skittle;mode=MySQL
     platform: h2
     data: classpath:sql/data.sql
     schema: classpath:sql/database.sql
+  webflux:
+    static-path-pattern: /asserts/**
+    date-format: yyyy-MM-dd HH:mm:ss
+  profiles:
+    active: production
+logging:
+  config: classpath:logback-${spring.profiles.active}.xml

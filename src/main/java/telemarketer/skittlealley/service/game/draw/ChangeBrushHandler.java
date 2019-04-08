@@ -1,12 +1,15 @@
 package telemarketer.skittlealley.service.game.draw;
 
 import com.alibaba.fastjson.JSONObject;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.service.common.RequestHandler;
+
+import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_CHANGE_BRUSH;
 
 /**
  * 处理改变笔刷的请求
@@ -15,7 +18,7 @@ import telemarketer.skittlealley.service.common.RequestHandler;
  * Time: 17-2-8
  * Email: imyijie@outlook.com
  */
-@DrawGuessEventHandler(DrawCode.DRAW_CHANGE_BRUSH)
+@Service
 public class ChangeBrushHandler implements RequestHandler {
 
     private static final String TYPE_COLOR = "color";
@@ -36,6 +39,11 @@ public class ChangeBrushHandler implements RequestHandler {
         } else if (TYPE_WIDTH.equals(type)) {
             ctx.setWidth(obj.getInteger(VALUE_NAME));
         }
-        response.setCode(DrawCode.DRAW_CHANGE_BRUSH.getCode()).setData(obj);
+        response.setCode(DRAW_CHANGE_BRUSH.getCode()).setData(obj);
+    }
+
+    @Override
+    public DrawCode[] supported() {
+        return new DrawCode[]{DRAW_CHANGE_BRUSH};
     }
 }

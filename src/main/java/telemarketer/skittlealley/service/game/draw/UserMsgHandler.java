@@ -1,8 +1,9 @@
 package telemarketer.skittlealley.service.game.draw;
 
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.socket.WebSocketSession;
+import org.apache.commons.text.StringEscapeUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
@@ -11,6 +12,8 @@ import telemarketer.skittlealley.service.common.RequestHandler;
 import java.util.ArrayList;
 import java.util.Map;
 
+import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_MSG;
+
 /**
  * 处理用户发送的信息
  * <p>
@@ -18,8 +21,12 @@ import java.util.Map;
  * Email: imyijie@outlook.com
  * Date: 2017/2/8
  */
-@DrawGuessEventHandler(DrawCode.DRAW_MSG)
+@Service
 public class UserMsgHandler implements RequestHandler {
+    @Override
+    public DrawCode[] supported() {
+        return new DrawCode[]{DRAW_MSG};
+    }
 
     @Override
     public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
@@ -42,7 +49,7 @@ public class UserMsgHandler implements RequestHandler {
         } else {
             msgs.add("<b>" + info.getName() + "</b>: " + msg);
         }
-        response.setCode(DrawCode.DRAW_MSG.getCode()).setData(msgs);
+        response.setCode(DRAW_MSG.getCode()).setData(msgs);
     }
 
     private void processGussPerson(DrawPlayerInfo info, DrawGuessContext ctx, String msg, ArrayList<String> msgs) {
