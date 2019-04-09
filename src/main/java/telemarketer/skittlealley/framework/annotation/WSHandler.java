@@ -21,5 +21,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Service
 public @interface WSHandler {
-    String[] value();
+    String value();
 }

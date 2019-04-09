@@ -1,27 +1,33 @@
 package telemarketer.skittlealley.web.websocket;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.Disposable;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import telemarketer.skittlealley.framework.annotation.WSHandler;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.service.game.DrawGuess;
 
+import javax.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,33 +43,46 @@ import static telemarketer.skittlealley.util.Constant.GAME_WEB_SOCKET_PREFIX;
  */
 @WSHandler(GAME_WEB_SOCKET_PREFIX + DrawGuess.IDENTIFY)
 public class DrawGuessWebSocket implements WebSocketHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuessWebSocket.class);
-    private static byte[] PING_MSG = "ping".getBytes(StandardCharsets.UTF_8);
+    private static final Logger log = LoggerFactory.getLogger(DrawGuessWebSocket.class);
+    private static final MsgModel PING = new MsgModel("ping");
     private final Map<String, WebSocketSession> clients = Collections.synchronizedMap(new LinkedHashMap<>());
     private final DrawGuess drawGuess;
-    private final EmitterProcessor<MsgModel> processor = EmitterProcessor.create();
+    private final EmitterProcessor<MsgModel> processor = EmitterProcessor.create(false);
     private final FluxSink<MsgModel> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
+    private final Disposable heartBeat = Flux.interval(Duration.ofSeconds(15), Schedulers.newSingle("HeartBeat")).doOnNext(l -> {
+        if (clients.size() > 0) {
+            sink.next(PING);
+        }
+    }).subscribe();
 
     @Autowired
     public DrawGuessWebSocket(DrawGuess drawGuess) {
         this.drawGuess = drawGuess;
     }
 
-    private void afterConnectionEstablished(WebSocketSession session) {
+    private Flux<MsgModel> afterConnectionEstablished(WebSocketSession session) {
+
         String id = session.getId();
         clients.put(id, session);
         DrawGuessContext ctx = drawGuess.connected(session);
-        JSONObject obj = new JSONObject();
-        obj.put("info", session.getAttributes().get("info"));
-        broadcast(transformToMsg(ApiResponse.code(DrawCode.USER_JOIN.getCode(), obj)), id);
-        obj.put("players", clients.values()
+        Object info = session.getAttributes().get("info");
+        MsgModel broadMsg = new MsgModel(ApiResponse.code(DrawCode.USER_JOIN.getCode(),
+                ImmutableMap.of("info", info))).setExcept(id);
+        HashMap<String, Object> json = Maps.newHashMapWithExpectedSize(5);
+        json.put("info", info);
+        json.put("players", clients.values()
                 .stream()
                 .map((w) -> w.getAttributes().get("info"))
                 .collect(Collectors.toList()));
-        obj.put("ctx", ctx);
-        obj.put("assign", true);
-        obj.put("timestamp", Instant.now().toEpochMilli());
-        sendTo(transformToMsg(ApiResponse.code(DrawCode.USER_JOIN.getCode(), obj)), id);
+        json.put("ctx", ctx);
+        json.put("assign", true);
+        json.put("timestamp", Instant.now().toEpochMilli());
+        MsgModel toMsg = new MsgModel(ApiResponse.code(DrawCode.USER_JOIN.getCode(), json)).setToId(id);
+        if (log.isDebugEnabled()) {
+            log.debug("[DrawGuess] {} join", session.getId());
+        }
+        return Flux.just(broadMsg, toMsg);
+
     }
 
     private void afterConnectionClosed(WebSocketSession session) {
@@ -72,8 +91,8 @@ public class DrawGuessWebSocket implements WebSocketHandler {
         drawGuess.closed(session);
         broadcast(transformToMsg(ApiResponse.code(DrawCode.USER_LEFT.getCode(), session.getAttributes().get("info"))),
                 null);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("{} leave", session.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("[DrawGuess] {} leave", session.getId());
         }
     }
 
@@ -94,9 +113,6 @@ public class DrawGuessWebSocket implements WebSocketHandler {
      */
     public void sendTo(String msg, String id) {
         sink.next(new MsgModel(msg).setToId(id));
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MSG:{},id:{}", msg, id);
-        }
     }
 
 
@@ -108,9 +124,6 @@ public class DrawGuessWebSocket implements WebSocketHandler {
      */
     public void broadcast(String msg, String except) {
         sink.next(new MsgModel(msg).setExcept(except));
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MSG:{},except:{}", msg, except);
-        }
     }
 
 
@@ -120,20 +133,27 @@ public class DrawGuessWebSocket implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        Flux<WebSocketMessage> flux = session.receive()
+        Mono<Void> flux = session.receive()
                 .doOnNext(msg -> handleTextMessage(session, msg))
-                .doOnError(throwable -> LOGGER.error("[DrawGuess]WebSocket error", throwable))
-                .doOnTerminate(() -> afterConnectionClosed(session));
-        Mono<Void> result = session.send(processor.filter(model -> model.isMatch(session.getId()))
+                .doOnError(throwable -> log.error("[DrawGuess]WebSocket error", throwable))
+                .doOnTerminate(() -> afterConnectionClosed(session))
+                .then();
+        Mono<Void> send = session.send(processor.filter(model -> model.isMatch(session.getId()))
                 .map(model -> {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("send '{}' to {}", model.content, session.getId());
+                    if (log.isDebugEnabled()) {
+                        log.debug("[Websocket] msg: {} , to: {}", model.content, session.getId());
                     }
                     return session.textMessage(model.getContent());
-                }))
-                .then();
-        afterConnectionEstablished(session);
-        return result;
+                }));
+        return Flux.merge(flux,
+                send,
+                afterConnectionEstablished(session).doOnNext(sink::next)
+        ).then();
+    }
+
+    @PreDestroy
+    public void close() {
+        heartBeat.dispose();
     }
 
     static class MsgModel {
@@ -143,6 +163,10 @@ public class DrawGuessWebSocket implements WebSocketHandler {
 
         public MsgModel(String content) {
             this.content = content;
+        }
+
+        public MsgModel(ApiResponse body) {
+            this.content = JSON.toJSONString(body, SerializerFeature.DisableCircularReferenceDetect);
         }
 
         public boolean isMatch(String id) {
