@@ -1,5 +1,6 @@
 package telemarketer.skittlealley.framework.aspect;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
@@ -11,7 +12,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.socket.TextMessage;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
@@ -63,7 +63,8 @@ public class DrawGuessAspect {
             returning = "info", argNames = "point,info")
     public void checkStop(JoinPoint point, DrawPlayerInfo info) {
         DrawGuessContext ctx = (DrawGuessContext) point.getTarget();
-        if (info == null) { // 并不在准备玩家中
+        // 并不在准备玩家中
+        if (info == null) {
             // 如果需要所有未准备玩家退出时开始游戏 可进行checkStart
             return;
         }
@@ -126,29 +127,30 @@ public class DrawGuessAspect {
     }
 
     private void notifyOtherStatus(DrawGuessContext ctx) {
-        ApiResponse response = service.borrowObject();
-        try {
-            response.setCode(DrawCode.GAME_UPDATE.getCode()).setData(ctx);
-            TextMessage textMessage = webSocket.transformToMsg(response);
-            webSocket.broadcast(textMessage, null);
-        } finally {
-            service.returnObject(response);
-        }
+        ApiResponse response = new ApiResponse();
+        response.setCode(DrawCode.GAME_UPDATE.getCode()).setData(ctx);
+        String textMessage = webSocket.transformToMsg(response);
+        webSocket.broadcast(textMessage, null);
+
     }
 
     private void notifyRunStatus(DrawGuessContext ctx) {
-        ApiResponse response = service.borrowObject();
-        try {
-            String currentUser = ctx.getCurrentUser();
-            JSONObject content = (JSONObject) JSONObject.toJSON(ctx);
+        JSONObject content = (JSONObject) JSON.toJSON(ctx);
+        String currentUser = ctx.getCurrentUser();
+        {
+            ApiResponse response = new ApiResponse();
             response.setCode(DrawCode.GAME_UPDATE.getCode()).setData(content);
-            webSocket.sendTo(webSocket.transformToMsg(response.setData(content)), currentUser);
-            content.getJSONObject("currentWord").remove("word"); // 广播消息去除敏感信息
-            TextMessage textMessage = webSocket.transformToMsg(response);
-            webSocket.broadcast(textMessage, currentUser);
-        } finally {
-            service.returnObject(response);
+            webSocket.sendTo(webSocket.transformToMsg(response), currentUser);
         }
+        {
+            ApiResponse response = new ApiResponse();
+            JSONObject clone = (JSONObject) content.clone();
+            response.setCode(DrawCode.GAME_UPDATE.getCode()).setData(clone);
+            // 广播消息去除敏感信息
+            clone.getJSONObject("currentWord").remove("word");
+            webSocket.broadcast(webSocket.transformToMsg(response), currentUser);
+        }
+
     }
 
 }

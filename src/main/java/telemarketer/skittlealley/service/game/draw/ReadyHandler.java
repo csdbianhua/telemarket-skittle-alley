@@ -1,11 +1,14 @@
 package telemarketer.skittlealley.service.game.draw;
 
 import com.alibaba.fastjson.JSONObject;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.service.common.RequestHandler;
+
+import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_READY;
 
 /**
  * 处理用户的准备信息
@@ -14,7 +17,7 @@ import telemarketer.skittlealley.service.common.RequestHandler;
  * Email: imyijie@outlook.com
  * Date: 2017/2/9
  */
-@DrawGuessEventHandler(DrawCode.USER_READY)
+@Service
 public class ReadyHandler implements RequestHandler {
 
     private static final String STATUS_NAME = "status";
@@ -37,6 +40,11 @@ public class ReadyHandler implements RequestHandler {
             info.setStatus(DrawUserStatus.WAIT);
             ctx.removePlayer(id);
         }
-        response.setCode(DrawCode.USER_READY.getCode()).setData(info);
+        response.setCode(USER_READY.getCode()).setData(info);
+    }
+
+    @Override
+    public DrawCode[] supported() {
+        return new DrawCode[]{USER_READY};
     }
 }

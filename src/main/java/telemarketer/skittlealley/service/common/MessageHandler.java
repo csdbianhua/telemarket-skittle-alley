@@ -1,6 +1,6 @@
 package telemarketer.skittlealley.service.common;
 
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 
