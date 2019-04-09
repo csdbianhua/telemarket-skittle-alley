@@ -63,7 +63,8 @@ public class DrawGuessAspect {
             returning = "info", argNames = "point,info")
     public void checkStop(JoinPoint point, DrawPlayerInfo info) {
         DrawGuessContext ctx = (DrawGuessContext) point.getTarget();
-        if (info == null) { // 并不在准备玩家中
+        // 并不在准备玩家中
+        if (info == null) {
             // 如果需要所有未准备玩家退出时开始游戏 可进行checkStart
             return;
         }

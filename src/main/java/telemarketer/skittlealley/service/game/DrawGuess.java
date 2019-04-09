@@ -19,7 +19,10 @@ import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,15 +152,10 @@ public class DrawGuess extends MessageHandler {
         }
         String currentUser = iterator.next();
         ctx.setCurrentUser(currentUser);
-        long endTime = Instant.now().toEpochMilli() + DrawGameStatus.RUN.getSpendTime();
+        long endTime = System.currentTimeMillis() + DrawGameStatus.RUN.getSpendTime();
         ctx.setEndTime(endTime);
         ctx.setCurrentWord(randomWord());
-        Runnable timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                processToWait(ctx);
-            }
-        };
+        Runnable timerTask = () -> processToWait(ctx);
         ctx.startTimerTask(timerTask, endTime);
         return ctx;
     }
@@ -169,26 +167,15 @@ public class DrawGuess extends MessageHandler {
      * @return 修改后的上下文
      */
     public DrawGuessContext processToWait(DrawGuessContext ctx) {
-        ctx.cancelTimerTask();
         ctx.setStatus(DrawGameStatus.WAIT_SHOW);
         int spendTime = DrawGameStatus.WAIT_SHOW.getSpendTime();
-        long endTime = Instant.now().toEpochMilli() + spendTime;
+        long endTime = System.currentTimeMillis() + spendTime;
         ctx.setEndTime(endTime);
         int size = ctx.players().size();
         if (ctx.getDrawNumber() < size) {
-            ctx.startTimerTask(new TimerTask() {
-                @Override
-                public void run() {
-                    processToRun(ctx);
-                }
-            }, endTime);
+            ctx.startTimerTask(() -> processToRun(ctx), endTime);
         } else {
-            ctx.startTimerTask(new TimerTask() {
-                @Override
-                public void run() {
-                    processToEnd(ctx);
-                }
-            }, endTime);
+            ctx.startTimerTask(() -> processToEnd(ctx), endTime);
         }
         return ctx;
     }
@@ -203,14 +190,9 @@ public class DrawGuess extends MessageHandler {
         ctx.setStatus(DrawGameStatus.END);
         ctx.clearGameInfo();
         int spendTime = DrawGameStatus.END.getSpendTime();
-        long endTime = Instant.now().toEpochMilli() + spendTime;
+        long endTime = System.currentTimeMillis() + spendTime;
         ctx.setEndTime(endTime);
-        ctx.startTimerTask(new TimerTask() {
-            @Override
-            public void run() {
-                processToReady(ctx);
-            }
-        }, endTime);
+        ctx.startTimerTask(() -> processToReady(ctx), endTime);
         return ctx;
     }
 
@@ -235,6 +217,9 @@ public class DrawGuess extends MessageHandler {
         int readySize = ctx.players().size();
         if (readySize <= 1 || ctx.status() != DrawGameStatus.READY || ctx.getRoomPeopleNumber() != readySize) {
             return false;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DrawGuess] check to start success");
         }
         processToRun(ctx);
         return true;

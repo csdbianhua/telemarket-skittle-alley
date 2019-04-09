@@ -2,6 +2,8 @@ package telemarketer.skittlealley.model.game.drawguess;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +24,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Email: imyijie@outlook.com
  */
 public class DrawGuessContext {
+
+    private static final Logger log = LoggerFactory.getLogger(DrawGuessContext.class);
+
     public static final int DEFAULT_WIDTH = 9;
     public static final String DEFAULT_COLOR = "blue";
     private String currentUser;
@@ -32,8 +37,8 @@ public class DrawGuessContext {
     private Integer width = DEFAULT_WIDTH;
     private String color = DEFAULT_COLOR;
     @JSONField(serialize = false, deserialize = false)
-    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1, r -> {
-        Thread t = new Thread();
+    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(2, r -> {
+        Thread t = new Thread(r);
         t.setName("DrawGuessTimer");
         return t;
     });
@@ -168,7 +173,11 @@ public class DrawGuessContext {
     }
 
     public void startTimerTask(Runnable timerTask, long time) {
-        this.timerTask = executor.schedule(timerTask, System.currentTimeMillis() - time, TimeUnit.MILLISECONDS);
+        cancelTimerTask();
+        if (log.isDebugEnabled()) {
+            log.debug("[DrawGuess] schedule a task with time : {}", time - System.currentTimeMillis());
+        }
+        this.timerTask = executor.schedule(timerTask, time - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     public void cancelTimerTask() {
