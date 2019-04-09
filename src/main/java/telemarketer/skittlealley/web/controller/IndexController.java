@@ -40,12 +40,12 @@ public class IndexController {
         return "redirect:/games";
     }
 
-    @GetMapping("/draw_guess_word_submit")
+    @GetMapping("/games/draw_guess/word_submit")
     public String drawGuessWordSubmitGet() {
         return "others/draw_guess_word_submit";
     }
 
-    @PostMapping("/draw_guess_word_submit")
+    @PostMapping("/games/draw_guess/word_submit")
     public Mono<String> drawGuessWordSubmitPost(DrawWord drawWord, Model model) {
         return Mono.fromCompletionStage(drawGuess.saveWord(drawWord)).map(i -> {
             model.addAttribute("tip", "新增成功");
