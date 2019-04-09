@@ -272,9 +272,12 @@ public class DrawGuess extends MessageHandler {
     }
 
     public CompletionStage<Integer> saveWord(DrawWord word) {
-        return sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip()).onDuplicateKeyUpdate()
-                .set(DRAW_WORD.WORD_TIP, word.getWordTip())
-                .executeAsync(executor);
+        return sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip())
+                .executeAsync(executor)
+                .exceptionally(throwable
+                        ->
+                        sql.update(DRAW_WORD).set(DRAW_WORD.WORD_TIP, word.getWordTip())
+                                .where(DRAW_WORD.WORD.eq(word.getWord())).execute());
 
     }
 }
