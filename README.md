@@ -7,7 +7,23 @@ Telemarket-skittle-alley
 
 使用的webflux、netty reactor。
 
-启动后访问根目录即可。
+本项目前后端分离，在开发环境下可以分别单独启动前端项目和后端项目。
+
+也可以将前端合并到后端项目一起运行。
+
+### 1.分别单独启动
+首先启动后端项目(spring boot main)
+然后启动前端项目
+``` bash
+cd src/main/front
+npm run start
+```
+此时由于前后端端口不一致，可能需要使用nginx进行转发，较为麻烦。
+### 2. 合并启动(推荐)
+
+执行`mvn generate-resources`后正常启动后端项目即可
+ 
+> 请注意：第一次使用ide启动或者前端资源发生变动后，都需要执行前端资源生成。
 
 ## 你画我猜
 

@@ -1,23 +1,17 @@
 server:
   port: 9607
 spring:
-  freemarker:
-    cache: true
-    charset: UTF-8
-    check-template-location: true
-    content-type: text/html
-    expose-request-attributes: true
-    expose-session-attributes: true
-    request-context-attribute: request
   datasource:
     url: jdbc:h2:./db/skittle;mode=MySQL
     platform: h2
     data: classpath:sql/data.sql
     schema: classpath:sql/database.sql
   webflux:
-    static-path-pattern: /asserts/**
+    static-path-pattern: /**
     date-format: yyyy-MM-dd HH:mm:ss
   profiles:
     active: production
+  resources:
+    static-locations: classpath:dist,classpath:distprivate
 logging:
   config: classpath:logback-${spring.profiles.active}.xml

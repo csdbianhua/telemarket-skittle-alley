@@ -3,13 +3,11 @@ package telemarketer.skittlealley.web.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import telemarketer.skittlealley.model.game.GameInfo;
 import telemarketer.skittlealley.service.GameService;
 
-import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -23,10 +21,6 @@ public class GameController {
 
     private final GameService gameService;
 
-    @ModelAttribute("games")
-    private Collection<GameInfo> getGames() {
-        return gameService.getGames();
-    }
 
     @Autowired
     public GameController(GameService gameService) {
