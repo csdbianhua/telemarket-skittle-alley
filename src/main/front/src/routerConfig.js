@@ -5,6 +5,12 @@ import NotFound from './pages/NotFound';
 
 const routerConfig = [
   {
+    path: '/',
+    layout: HeaderAsideLayout,
+    component: Dashboard,
+    children: [],
+  },
+  {
     path: '/games',
     layout: HeaderAsideLayout,
     component: Dashboard,

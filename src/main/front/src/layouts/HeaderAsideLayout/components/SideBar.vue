@@ -1,8 +1,8 @@
 <template>
     <scroll-bar>
         <div class="logo">
-            <img src="https://img.alicdn.com/tfs/TB13UQpnYGYBuNjy0FoXXciBFXa-242-134.png" width="40">
-            <span class="site-name">ADMIN LITE</span>
+            <img :src="img_logo" width="40">
+            <span class="site-name"><router-link to="/">Telemarket</router-link></span>
         </div>
         <el-menu
                 mode="vertical"
@@ -40,6 +40,7 @@
 
 <script>
   import ScrollBar from './ScrollBar';
+  import img_logo from '@/assets/logo.png';
   import {asideMenuConfig} from '../../../menuConfig';
 
   export default {
@@ -48,6 +49,7 @@
     props: {},
     data() {
       return {
+        img_logo,
         asideMenuConfig,
       };
     },
