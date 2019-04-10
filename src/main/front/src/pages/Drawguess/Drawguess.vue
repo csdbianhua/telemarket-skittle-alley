@@ -2,51 +2,57 @@
     <el-container>
         <el-header>
             <el-row :gutter="20">
-                <el-col :span="6">{{ currentUser }}</el-col>
+                <el-col :span="6"><span v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span></el-col>
                 <el-col :span="12"><h2>{{ title }}</h2></el-col>
-                <el-col :span="6">{{ time }}</el-col>
+                <el-col :span="6"><span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span></el-col>
             </el-row>
         </el-header>
         <el-main>
             <el-row :gutter="20">
-
                 <el-col :span="6">
                     <ul class="user-thread">
                     </ul>
-                    <div class="input-group">
-                        <input type="text" id="name_text" class="form-control">
+                    <div>
+                        <input type="text" v-model="inputName" :disabled="this.ctxGame.status !== constants.GAME_READY"
+                               class="form-control">
                         <span class="input-group-btn">
-                        <button class="btn btn-warning user_btn" id="name_btn" type="button">改名!</button>
-                        <button class="btn btn-danger user_btn" id="ready_btn" type="button">准备!</button>
+                        <button class="btn btn-warning" @click="sendNewName"
+                                :disabled="this.ctxGame.status !== constants.GAME_READY"
+                                type="button">改名!</button>
+                        <button class="btn btn-danger" @click="ready"
+                                :disabled="this.ctxGame.status !== constants.GAME_READY || !flagUser"
+                                type="button">准备!</button>
                     </span>
                     </div>
                 </el-col>
                 <el-col :span="12">
-                    <div align="center">
-                        <canvas id="myCanvas" width="800" height="416" style="border:2px solid #6699cc"></canvas>
+                    <div style="align-content: center;">
+                        <canvas id="canvas" width="800" height="416" style="border:2px solid #6699cc"></canvas>
                         <div class="control-ops">
-                            <button type="button" class="btn btn-primary" disabled="disabled" id="clear_btn">清空画板
+                            <button :disabled="!isCurrentUser()" @click="sendClearSig">清空画板
                             </button>
-                            线宽 : <select id="selWidth" disabled="disabled">
-                            <option v-for="item in 10" :value="item">{{ item + 1 }}</option>
-                        </select>
-                            颜色 : <select id="selColor" disabled="disabled">
-                            <option v-for="item in ['black','blue','red','green','yellow','gray']" :value="item">{{ item
-                                }}
-                            </option>
-
-                        </select>
+                            线宽 :
+                            <el-select v-model="ctxGame.width" :disabled="!isCurrentUser()">
+                                <option v-for="item in 10" :value="item">{{ item }}</option>
+                            </el-select>
+                            颜色 :
+                            <el-select v-model="ctxGame.color" :disabled="!isCurrentUser()">
+                                <option v-for="item in ['black','blue','red','green','yellow','gray']" :value="item">
+                                    {{ item }}
+                                </option>
+                            </el-select>
                         </div>
                     </div>
                 </el-col>
                 <el-col :span="6">
-                    <ul class="chat-thread">
+                    <ul class="chat-thread" ref="charThread">
+                        <li v-for="msg in msgList"><span v-html="msg"></span></li>
                     </ul>
-                    <div class="input-group">
-                        <input type="text" id="send_text" class="form-control">
-                        <span class="input-group-btn">
-                        <button class="btn btn-info" id="send_btn" type="button">发送!</button>
-                    </span>
+                    <div>
+                        <input type="text" v-model="inputMsg">
+                        <span>
+                            <button @click="sendText" type="button">发送!</button>
+                        </span>
                     </div>
                 </el-col>
             </el-row>
@@ -55,203 +61,264 @@
 </template>
 <script>
 
-
-  // function scrollToBottom(count) {
-  //   chat_thread.animate({
-  //     scrollTop: chat_thread.prop('scrollHeight') - chat_thread.height(),
-  //   }, 300);
-  //   if (typeof count === 'undefined') {
-  //     count = 1;
-  //   }
-  //   if (msg_count > MAX_MSG_COUNT) {
-  //     for (var i = 0; i < count; i++) {
-  //       $('.chat-thread>:first-child').remove();
-  //     }
-  //   } else {
-  //     msg_count += count;
-  //   }
-  // }
-
-  // $sendText.on('keydown', function(e) {
-  //   if (e.keyCode === 13) {
-  //     $sendBtn.trigger('click');
-  //   }
-  // });
-
-  const GAME_READY = 0;
-  const GAME_RUN = 1;
-  const GAME_WAIT = 2;
-  const GAME_END = 3;
-  var mousePressed = false;
-  var lastX, lastY;
-  var ctxCanvas;
-  var ctxGame = {};
-  var info = {};
-  var msg_count = 1;
+  let lastX, lastY;
   const MAX_MSG_COUNT = 50;
-  var time_offset = 0;
   export default {
     name: 'draw_guess',
     data() {
-      var msgProcessors = {
-        '1': function(res) { // move
-          var data = res.data;
-          draw(data.x, data.y, data.isDown);
-        },
-        '2': function() { // clear
-          clearArea();
-        },
-        '3': function(res) { // clear
-          var data = res.data;
-          switch (data.type) {
-            case 'color':
-              $('#selColor').val(data.value);
-              break;
-            case 'width':
-              $('#selWidth').val(data.value);
-              break;
-            default:
-              break;
-          }
-        },
-        '4': function(res) { // msg
-          var data = res.data;
-          var count = 1;
-          if (Array.isArray(data)) {
-            data.forEach(function(val) {
-              chat_thread.append('<li>' + val + '</li>');
-            });
-            count = data.length;
-          } else {
-            chat_thread.append('<li>' + data + '</li>');
-          }
-          scrollToBottom(count);
-        },
-        '10': function(res) { // join
-          var data = res.data;
-          if (data.assign) {
-            info = data.info;
-            initCtx(data);
-          } else {
-            addUser(data.info);
-          }
-          scrollToBottom();
-        },
-        '11': function(res) { // ready
-          var data = res.data;
-          readyUser(data);
-        },
-        '12': function(res) { // leave
-          removeUser(res.data);
-          scrollToBottom();
-        },
-        '13': function(res) { // change name
-          changeUser(res.data);
-          scrollToBottom();
-        },
-        '20': function(res) { // update ctx
-          updateCtx(res.data);
-        },
-      };
-      let gameStatusHandler = {};
-      gameStatusHandler[GAME_READY] = 'readyGame';
-      gameStatusHandler[GAME_RUN] = 'runGame';
-      gameStatusHandler[GAME_WAIT] = 'waitGame';
-      gameStatusHandler[GAME_END] = 'endGame';
       return {
+        constants: {
+          GAME_READY: 0,
+          GAME_RUN: 1,
+          GAME_WAIT: 2,
+          GAME_END: 3,
+        },
         title: '正在连接中...',
         currentUser: '',
-        time: '',
-        clock_id: [],
-        timeout_id: [],
-        gameStatusHandler,
-        msgProcessors,
+        inputName: '',
+        inputMsg: '',
+        clockSeconds: 0,
+        timeOffset: 0,
+        myInfo: {},
+        allUserInfo: {},
+        msgList: [],
+        ctxCanvas: null,
+        ctxGame: {
+          currentUser: '',
+          status: 0,
+          currentWord: {
+            word: '',
+            wordCount: 0,
+            wordType: '',
+          },
+          endTime: 0,
+          players: {},
+          width: 1,
+          color: 'black',
+          rightNumber: 0,
+        },
+        // 是否可以绘画
+        flagDraw: false,
+        // 是否可以进行用户操作
+        flagUser: true,
+        mousePressed: false,
+        clockIds: [],
+        timeoutIds: [],
+        websocket: null,
       };
+    },
+    computed: {
+      currentUserName: function() {
+        if (!this.ctxGame.currentUser) {
+          return '';
+        }
+        return this.allUserInfo[this.ctxGame.currentUser].name;
+      },
+    },
+    watch: {
+      'ctxGame.width': function(newWidth, oldWidth) {
+        if (newWidth === oldWidth) {
+          return;
+        }
+        this.sendChangeBrush('width', newWidth);
+      },
+      'ctxGame.color': function(newColor, oldColor) {
+        if (newColor === oldColor) {
+          return;
+        }
+        this.sendChangeBrush('color', newColor);
+      },
+      'ctxGame.status': function(newStatus) {
+        switch (newStatus) {
+          case this.constants.GAME_READY:
+            return this.readyGame();
+          case this.constants.GAME_RUN:
+            return this.runGame();
+          case this.constants.GAME_WAIT:
+            return this.waitGame();
+          case this.constants.GAME_END:
+            return this.endGame();
+        }
+      },
+      msgList: function() {
+        let charThread = this.$refs.charThread;
+        charThread.animate({
+          scrollTop: charThread.scrollHeight - charThread.scrollTop,
+        }, 300);
+        if (this.msgList.length > MAX_MSG_COUNT) {
+          this.msgList.splice(0, MAX_MSG_COUNT - this.msgList.length);
+        }
+      },
+      allUserInfo: {
+        handler(newMap, oldMap) {
+          let newUserIds = Object.getOwnPropertyNames(newMap);
+          let oldUserIds = Object.getOwnPropertyNames(oldMap);
+          if (newUserIds.length > oldUserIds.length) {
+            for (let i = 0; i < newUserIds.length; i++) {
+              let userId = newUserIds[i];
+              if (oldMap[userId]) {
+                continue;
+              }
+              let userInfo = newMap[userId];
+              let msg;
+              if (this.myInfo.id === userInfo.id) {
+                msg = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
+              } else {
+                msg = `<b>${userInfo.name}</b> 进入了房间。`;
+              }
+              this.msgList.push(msg);
+            }
+          } else if (oldUserIds.length > newUserIds.length) {
+            for (let i = 0; i < oldUserIds.length; i++) {
+              let userId = oldUserIds[i];
+              if (newMap[userId]) {
+                continue;
+              }
+              let userInfo = oldMap[userId];
+              let msg;
+              if (this.myInfo.id === userInfo.id) {
+                msg = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
+              } else {
+                msg = `<b>${userInfo.name}</b> 进入了房间。`;
+              }
+              this.msgList.push(msg);
+            }
+          } else {
+            for (let i = 0; i < oldUserIds.length; i++) {
+              let userId = oldUserIds[i];
+              let newUserInfo = newMap[userId];
+              let oldUserInfo = oldMap[userId];
+              if (newUserInfo.name !== oldUserInfo.name) {
+                this.msgList.push(`<b>${oldUserInfo.name}</b> 更名为 <b>${newUserInfo.name}</b>。`);
+              }
+            }
+
+          }
+        },
+        deep: true,
+      },
     },
     methods: {
       initWebsocket: function() {
-        var websocket = new WebSocket(
-            `ws://${window.location.host}/ws/games/draw_guess`);
-
+        let websocket = this.websocket = new WebSocket(`ws://${window.location.host}/ws/games/draw_guess`);
+        let that = this;
+        let msgProcessors = {
+          '1': function(res) { // move
+            let data = res.data;
+            that.draw(data.x, data.y, data.isDown);
+          },
+          '2': function() { // clear
+            that.clearArea();
+          },
+          '3': function(res) { // change brush
+            let data = res.data;
+            that.ctxGame[data.type] = data.value;
+          },
+          '4': function(res) { // msg
+            let data = res.data;
+            if (Array.isArray(data)) {
+              data.forEach(function(val) {
+                that.msgList.push(val);
+              });
+            } else {
+              that.msgList.append(data);
+            }
+          },
+          '10': function(res) { // join
+            let data = res.data;
+            if (data.assign) {
+              that.myInfo = data.info;
+              that.initCtx(data);
+            } else {
+              that.addUser(data.myInfo);
+            }
+          },
+          '11': function(res) { // ready
+            let data = res.data;
+            that.readyUser(data);
+          },
+          '12': function(res) { // leave
+            that.removeUser(res.data);
+          },
+          '13': function(res) { // change name
+            that.changeUser(res.data);
+          },
+          '20': function(res) { // update ctx
+            that.updateCtx(res.data);
+          },
+        };
         websocket.onmessage = function(event) {
           if (event.data[0] !== '{') {
             return;
           }
-          var res = JSON.parse(event.data);
-          msg_processors[res.code.toString()](res);
+          let res = JSON.parse(event.data);
+          msgProcessors[res.code.toString()](res);
         };
         websocket.onopen = function() {
-          $headText.html(DEFAULT_HEAD);
+          that.title = '你画我猜';
         };
         websocket.onclose = function(error) {
+          that.$message.error('服务器连接失败，请刷新页面');
+          that.title = '连接丢失...';
           console.error(error);
-          $.alert('服务器连接失败，请刷新页面');
-          $headText.html('服务器连接失败，请刷新页面');
         };
         websocket.onerror = function(err) {
           console.error('错误' + err);
         };
       },
       initCanvas: function() {
-        ctxCanvas = document.getElementById('myCanvas').getContext('2d');
-        var $myCanvas = $('#myCanvas');
-        $myCanvas.mousedown(function(e) {
-          mousePressed = true;
-          sendMoveSig(e.pageX - $(this).offset().left,
-              e.pageY - $(this).offset().top, false);
-        });
+        let canvas = this.ctxCanvas = document.getElementById('canvas').getContext('2d');
+        let that = this;
+        canvas.onmousedown = function(e) {
+          that.mousePressed = true;
+          that.sendMoveSig(e.pageX - canvas.offset().left,
+              e.pageY - canvas.offset().top, false);
+        };
 
-        $myCanvas.mousemove(function(e) {
-          if (mousePressed) {
-            sendMoveSig(e.pageX - $(this).offset().left,
-                e.pageY - $(this).offset().top, true);
+        canvas.onmousemove = function(e) {
+          if (that.mousePressed) {
+            that.sendMoveSig(e.pageX - canvas.offset().left,
+                e.pageY - canvas.offset().top, true);
           }
-        });
+        };
 
-        $myCanvas.mouseup(function(e) {
-          mousePressed = false;
-        });
-        $myCanvas.mouseleave(function(e) {
-          mousePressed = false;
-        });
+        canvas.onmouseup = function(e) {
+          that.mousePressed = false;
+        };
+        canvas.onmouseleave = function(e) {
+          that.mousePressed = false;
+        };
       },
       initCtx: function(data) {
-        ctxGame = data.ctx;
-        $selColor.val(ctxGame.color);
-        $selWidth.val(ctxGame.width);
-        data.players.forEach(function(val) {
-          addUser(val);
-          readyUser(val);
-        });
-        if (ctxGame.status !== GAME_READY) {
-          disableUserBtn(true);
-          updateCtx(ctxGame);
-        }
+        this.allUserInfo = data.players;
         if (data.timestamp) {
-          time_offset = data.timestamp - new Date().getTime();
-          console.log('初始化服务器时间差' + time_offset + 'ms');
+          this.timeOffset = data.timestamp - new Date().getTime();
+          console.log('初始化服务器时间差' + this.timeOffset + 'ms');
         }
+        this.updateCtx(data.ctx);
       },
       sendMoveSig: function(x, y, isDown) {
-        if (isCurrentUser()) {
-          websocket.send(
-              JSON.stringify({code: 1, msg: {x: x, y: y, isDown: isDown}}));
+        this.websocket.send(
+            JSON.stringify({code: 1, msg: {x: x, y: y, isDown: isDown}}));
+      },
+      sendText: function() {
+        if (this.inputMsg) {
+          this.websocket.send(JSON.stringify({code: 4, msg: this.inputMsg}));
+          this.inputMsg = '';
         }
       },
-      sendText: function(msg) {
-        websocket.send(JSON.stringify({code: 4, msg: msg}));
-      },
       getServerTime: function() {
-        return new Date().getTime() + time_offset;
+        return Date.now() + this.timeOffset;
       },
       isCurrentUser: function() {
-        return info.id === ctxGame.currentUser;
+        return this.myInfo.id === this.ctxGame.currentUser;
       },
       draw: function(x, y, isDown) {
+        let ctxCanvas = this.ctxCanvas;
         if (isDown) {
           ctxCanvas.beginPath();
-          ctxCanvas.strokeStyle = $('#selColor').val();
-          ctxCanvas.lineWidth = $('#selWidth').val();
+          ctxCanvas.strokeStyle = this.ctxGame.color;
+          ctxCanvas.lineWidth = this.ctxGame.width;
           ctxCanvas.lineJoin = 'round';
           ctxCanvas.moveTo(lastX || x, lastY || y);
           ctxCanvas.lineTo(x, y);
@@ -263,228 +330,177 @@
       },
       clearArea: function() {
         // Use the identity matrix while clearing the canvas
-        ctxCanvas.setTransform(1, 0, 0, 1, 0, 0);
-        ctxCanvas.clearRect(0, 0, ctxCanvas.canvas.width, ctxCanvas.canvas.height);
+        this.ctxCanvas.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctxCanvas.clearRect(0, 0, this.ctxCanvas.canvas.width, this.ctxCanvas.canvas.height);
       },
       sendClearSig: function() {
-        if (isCurrentUser()) {
-          websocket.send(JSON.stringify({code: 2}));
-        }
+        this.websocket.send(JSON.stringify({code: 2}));
       },
-      sendChangeWidth: function() {
-        sendChangeBrush('width', $(this).val());
+      sendChangeBrush: function(type, val) {
+        this.websocket.send(
+            JSON.stringify({code: 3, msg: {type: type, value: val}}));
       },
-      sendChangeColor: function() {
-        sendChangeBrush('color', $(this).val());
-      },
-      sendChangeBrush: function() {
-        if (isCurrentUser()) {
-          websocket.send(
-              JSON.stringify({code: 3, msg: {type: type, value: value}}));
-        }
-      },
-      sendText: function() {
-        var val = $sendText.val();
-        if (val !== '') {
-          sendText(val);
-          $sendText.val('');
-        }
-      },
-      changeName: function() {
-        var newName = $nameText.val();
-        if (newName !== '' && newName.length > 1 && newName.length < 10) {
-          sendNewName(newName);
-          $nameText.val('');
-        } else {
-          $.alert('名字不可小于1个字符大于10个字符');
-        }
-      },
-      ready: function(e) {
-        e.preventDefault();
-        var $btn = $(this);
-        $btn.attr('disabled', true);
-        sendReady();
-        setTimeout(function() {
-          if ($nameBtn.prop('disabled')) { // 防止已开始
-            return;
-          }
-          $btn.attr('disabled', false);
-        }, 3000);
+      ready: function() {
+        this.sendReady();
       },
       sendReady: function() {
-        websocket.send(JSON.stringify(
-            {code: 11, msg: {id: info.id, status: !(info.status > 0)}}));
+        this.websocket.send(JSON.stringify(
+            {code: 11, msg: {id: this.myInfo.id, status: !(this.myInfo.status > 0)}}));
       },
-      sendNewName: function(newName) {
-        websocket.send(JSON.stringify({code: 13, msg: newName}));
-      },
-      removeUser: function(user_info) {
-        var item = $('#' + user_info.id);
-        if (item.length > 0) {
-          item.remove();
-          chat_thread.append('<li><b>' + user_info.name + '</b> 离开了房间。</li>');
+      sendNewName: function() {
+        if (this.inputName) {
+          if (this.inputName.length < 1 || this.inputName.length > 10) {
+            this.$message.warning('名字不可小于1个字符大于10个字符');
+            return;
+          }
+          this.websocket.send(JSON.stringify({code: 13, msg: this.inputName}));
+          this.inputName = '';
         }
       },
-      addUser: function(user_info) {
-        if ($('#' + user_info.id).length > 0) {
-          console.error('警告:重复添加用户' + user_info.id);
-          return;
-        }
-        var element = '<li id="' + user_info.id + '"';
-        if (info.id === user_info.id) {
-          chat_thread.append('<li><b>你</b> 进入了房间。名称为:' + user_info.name + '</li>');
-          element += ' style="color: #5cb85c"';
-        } else {
-          chat_thread.append('<li><b>' + user_info.name + '</b> 进入了房间。</li>');
-        }
-        element += '><span class="user_name">' + user_info.name +
-            '</span><span class="user_score"></span></li>';
-        user_thread.append(element);
+      removeUser: function(userInfo) {
+        delete this.allUserInfo[userInfo.id];
+      },
+      addUser: function(userInfo) {
+        this.allUserInfo[userInfo.id] = userInfo;
       },
       changeUser: function(userInfo) {
-        var item = $('#' + userInfo.id);
-        if (item.length <= 0) {
-          addUser(userInfo);
-        }
-        var ori = item.text();
-        chat_thread.append(
-            '<li><b>' + ori + '</b> 更名为 <b>' + userInfo.name + '</b>。</li>');
-        item.find('.user_name').text(userInfo.name);
-      },
-      updateUserScore: function(userInfo) {
-        var item = $('#' + userInfo.id);
-        if (item.length <= 0) {
-          addUser(userInfo);
-        }
-        item.find('.user_score').text('[' + userInfo.score + ']');
+        this.allUserInfo[userInfo.id] = userInfo;
       },
       readyUser: function(readyInfo) {
-        var element = $('#' + readyInfo.id);
-        var ready = readyInfo.status > 0;
-        if (ready) {
-          element.append('<span class="glyphicon glyphicon-ok"></span>');
-        } else {
-          element.children('.glyphicon').remove();
+        if (readyInfo.id === this.myInfo.id) {
+          this.myInfo = readyInfo;
         }
-        if (readyInfo.id === info.id) {
-          info.status = readyInfo.status;
-          if (ready) {
-            $readyBtn.attr('class', 'btn btn-info user_btn');
-            $readyBtn.text('不准!');
-          } else {
-            $readyBtn.attr('class', 'btn btn-danger user_btn');
-            $readyBtn.text('准备!');
-          }
-        }
+        this.allUserInfo[readyInfo.id] = readyInfo;
       },
       updateCtx: function(newCtx) {
-        ctxGame = newCtx;
-        game_status_handler[ctxGame.status](ctxGame);
+        this.ctxGame = newCtx;
       },
-      readyGame: function(ctx) {
-        disableDraw(true);
-        disableUserBtn(false);
-        stopClockAndTimeout();
-        clearArea();
-        user_thread.find('.glyphicon').remove();
-        user_thread.find('.user_score').html('');
-        info.status = 0;
-        readyUser(info); // 改变按钮状态
-        $headText.text(DEFAULT_HEAD);
-        $leftText.text(DEFAULT_TEXT);
-        $rightText.text(DEFAULT_TEXT);
+      readyGame: function() {
+        this.disableDraw(true);
+        this.stopClockAndTimeout();
+        this.clearArea();
       },
       runGame: function(ctx) {
-        clearArea();
-        disableUserBtn(true);
-        startClock(ctx);
-        if (isCurrentUser()) {
-          disableDraw(false);
-          $headText.text('请作画:' + ctx.currentWord.word);
+        this.clearArea();
+        this.startClock();
+        if (this.isCurrentUser()) {
+          this.title = '请作画:' + ctx.currentWord.word;
         } else {
-          disableDraw(true);
-          $headText.text('快猜!');
-          startTips();
+          this.title = '快猜!';
+          this.startTips();
         }
-        $leftText.text(
-            '当前画师:' + $('#' + ctx.currentUser).find('.user_name').text());
       },
       waitGame: function(ctx) {
-        if (isCurrentUser()) {
-          disableDraw(true);
-        }
-        $headText.html(
-            '答案是' + ctx.currentWord.word + '。共有<b>' + ctx.rightNumber + '</b>人猜对');
-        ctx.players.forEach(function(val) {
-          updateUserScore(val);
-        });
-        startClock(ctx);
+        this.title = `答案是${this.ctxGame.currentWord.word}'。共有<b>${this.ctxGame.rightNumber}</b>人猜对`;
+        this.allUserInfo = this.ctxGame.players;
+        this.startClock(ctx);
       },
       endGame: function(ctx) {
-        disableDraw(true);
-        $headText.html('最终得分');
-        ctx.players.forEach(function(val) {
-          updateUserScore(val);
-        });
-        startClock(ctx);
+        this.title = '最终得分';
+        this.startClock(ctx);
       },
       startTips: function() {
-        timeout_id.push(setTimeout(countTimeout, 30000));
-        timeout_id.push(setTimeout(typeTimeout, 10000));
+        this.timeoutIds.push(setTimeout(this.countTimeout, 30000));
+        this.timeoutIds.push(setTimeout(this.typeTimeout, 10000));
       },
       countTimeout: function() {
-        var ori = $headText.html();
-        $headText.html(ori + ctxGame.currentWord.wordCount + '个字！还猜不出来???');
+        this.title += this.ctxGame.currentWord.wordCount + '个字！还猜不出来???';
       },
       typeTimeout: function() {
-        var ori = $headText.html();
-        $headText.html(ori + ctxGame.currentWord.wordType + '!');
+        this.title += this.ctxGame.currentWord.wordType + '!';
       },
-      startClock: function(ctx) {
-        stopClockAndTimeout();
-        $rightText.html('<span id="minus"></span>分<span id="seconds"></span>秒');
-        countdown(ctx.endTime);
-        clock_id.push(setInterval(countdown, 500, ctx.endTime));
+      startClock: function() {
+        let ctx = this.ctxGame;
+        this.stopClockAndTimeout();
+        this.countdown(ctx.endTime);
+        this.clockIds.push(setInterval(this.countdown, 500, ctx.endTime));
       },
-      disableUserBtn: function() {
-        $('.user_btn').attr('disabled', flag);
+      disableUserBtn: function(flag) {
+        this.flagUser = !flag;
       },
       disableDraw: function(flag) {
-        $selColor.attr('disabled', flag);
-        $selWidth.attr('disabled', flag);
-        $clearBtn.attr('disabled', flag);
+        this.flagDraw = !flag;
       },
-      countdown: function(time) {
-        var $minus = $('#minus');
-        var $seconds = $('#seconds');
-        var djs = time;
-        var b = getServerTime();
-        var cc = djs - b;
-        if (cc <= 0) {
-          $minus.html(0);
-          $seconds.html(0);
-          return stopClockAndTimeout();
+      countdown: function(targetTime) {
+        let serverTime = this.getServerTime();
+        let diff = targetTime - serverTime;
+        if (diff <= 0) {
+          diff = 0;
         }
-        cc /= 1000;
-        var m = Math.floor(cc / 60);
-        var s = Math.floor(cc - m * 60);
-        $minus.html(m);
-        $seconds.html(s);
+        diff /= 1000;
+
+        this.clockSeconds = diff;
+        if (diff <= 0) {
+          this.stopClockAndTimeout();
+        }
       },
       stopClockAndTimeout: function() {
-        if (clock_id.length > 0) {
-          clock_id.forEach(function(val) {
+        if (this.clockIds.length > 0) {
+          this.clockIds.forEach(function(val) {
             clearInterval(val);
           });
-          clock_id = [];
+          this.clockIds.clear();
         }
-        if (timeout_id.length > 0) {
-          timeout_id.forEach(function(val) {
+        if (this.timeoutIds.length > 0) {
+          this.timeoutIds.forEach(function(val) {
             clearTimeout(val);
           });
-          timeout_id = [];
+          this.timeoutIds.clear();
         }
       },
     },
+    created() {
+    },
+    mounted() {
+      let that = this;
+      window.addEventListener('load', () => {
+        that.initCanvas();
+        that.initWebsocket();
+      });
+    },
   };
 </script>
+<style lang="scss" scoped>
+    .chat-thread {
+        list-style: none;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-left: 0;
+        height: 420px;
+    }
+
+    .user-thread {
+        list-style: none;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-left: 0;
+        height: 420px;
+    }
+
+    .chat-thread li {
+        position: relative;
+        clear: both;
+        display: inline-block;
+        padding: 16px 20px 16px 20px;
+        font-size: 12px;
+        word-break: break-all;
+        border-radius: 10px;
+        background-color: rgba(25, 147, 147, 0.2);
+        margin: 0 15px 20px 0;
+        color: #0AD5C1;
+    }
+
+    .user-thread li {
+        position: relative;
+        clear: both;
+        display: inline-block;
+        padding: 16px 20px 16px 20px;
+        font-size: 18px;
+        font-weight: bold;
+        word-break: break-all;
+        border-radius: 10px;
+        background-color: rgba(25, 147, 147, 0.2);
+        margin: 0 15px 20px 0;
+        color: #0AD5C1;
+    }
+</style>

@@ -21,10 +21,10 @@ npm run start
 此时由于前后端端口不一致，可能需要使用nginx进行转发，较为麻烦。
 ### 2. 合并启动
 
-执行`mvn generate-resources`后正常启动后端项目即可
+执行`mvn process-resources`后正常启动后端项目即可
  
 > 请注意：第一次使用ide启动或者前端资源发生变动后，都需要执行前端资源生成。
-> 手动执行方式为到`src/main/front`下执行`npm i && npm run build`(前端资源编译)然后执行 `mvn resources:copy-resources`(复制结果到resources目录下)
+> 手动执行方式为到`src/main/front`下执行`npm i && npm run build`(前端资源编译)然后复制`dist`到`resources`目录下
 
 比较推荐使用第一种方式开发，前端修改能够快速地反馈。
 
