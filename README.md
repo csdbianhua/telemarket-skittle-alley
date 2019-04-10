@@ -5,9 +5,9 @@ Telemarket-skittle-alley
 
 数据库为嵌入式h2，存储到本地文件中。
 
-使用的webflux、netty reactor。
+使用webflux、netty reactor、vue。
 
-本项目前后端分离，在开发环境下可以分别单独启动前端项目和后端项目。
+本项目前后端分离，在开发环境下可以分别单独启动前端项目和后端项目。需要安装`node 8`以执行前端资源编译。
 
 也可以将前端合并到后端项目一起运行。
 
@@ -24,6 +24,7 @@ npm run start
 执行`mvn generate-resources`后正常启动后端项目即可
  
 > 请注意：第一次使用ide启动或者前端资源发生变动后，都需要执行前端资源生成。
+> 手动执行方式为到`src/main/front`下执行`npm i && npm run build`(前端资源编译)然后执行 `mvn resources:copy-resources`(复制结果到resources目录下)
 
 ## 你画我猜
 
