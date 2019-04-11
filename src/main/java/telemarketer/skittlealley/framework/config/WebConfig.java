@@ -9,6 +9,8 @@ import org.springframework.core.Ordered;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
+import org.springframework.web.reactive.result.view.AbstractUrlBasedView;
+import org.springframework.web.reactive.result.view.UrlBasedViewResolver;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.WebSocketService;
 import org.springframework.web.reactive.socket.server.support.HandshakeWebSocketService;
@@ -61,6 +63,13 @@ public class WebConfig {
         mapping.setOrder(Ordered.HIGHEST_PRECEDENCE);
         mapping.setUrlMap(map);
         return mapping;
+    }
+
+    @Bean
+    public UrlBasedViewResolver viewResolver() {
+        UrlBasedViewResolver viewResolver = new UrlBasedViewResolver();
+        viewResolver.setViewClass(AbstractUrlBasedView.class);
+        return viewResolver;
     }
 
 }
