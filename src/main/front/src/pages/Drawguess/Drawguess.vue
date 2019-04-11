@@ -1,59 +1,67 @@
 <template>
     <el-container>
         <el-header>
-            <el-row :gutter="20">
+            <el-row type="flex" justify="space-between" :gutter="20">
                 <el-col :span="6"><span v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span></el-col>
-                <el-col :span="12"><h2>{{ title }}</h2></el-col>
+                <el-col :span="12" type="flex" align="middle" justify="center"><h2 v-html="title"></h2></el-col>
                 <el-col :span="6"><span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span></el-col>
             </el-row>
         </el-header>
         <el-main>
             <el-row :gutter="20">
                 <el-col :span="6">
-                    <ul class="user-thread">
-                    </ul>
-                    <div>
-                        <input type="text" v-model="inputName" :disabled="this.ctxGame.status !== constants.GAME_READY"
-                               class="form-control">
-                        <span class="input-group-btn">
-                        <button class="btn btn-warning" @click="sendNewName"
-                                :disabled="this.ctxGame.status !== constants.GAME_READY"
-                                type="button">改名!</button>
-                        <button class="btn btn-danger" @click="ready"
-                                :disabled="this.ctxGame.status !== constants.GAME_READY || !flagUser"
-                                type="button">准备!</button>
-                    </span>
-                    </div>
+                    <el-row>
+                        <ul class="user-thread">
+                        </ul>
+                    </el-row>
+                    <el-row>
+                        <el-input type="text" v-model="inputName"
+                                  :disabled="this.ctxGame.status !== constants.GAME_READY">
+                            <el-button slot="append" plain type="primary" @click="sendNewName"
+                                       :disabled="this.ctxGame.status !== constants.GAME_READY"
+                            >改名
+                            </el-button>
+                            <el-button slot="append" plain type="primary" @click="ready"
+                                       :disabled="this.ctxGame.status !== constants.GAME_READY || !flagUser"
+                            >准备
+                            </el-button>
+                        </el-input>
+
+                    </el-row>
                 </el-col>
                 <el-col :span="12">
                     <div style="align-content: center;">
-                        <canvas id="canvas" width="800" height="416" style="border:2px solid #6699cc"></canvas>
-                        <div class="control-ops">
-                            <button :disabled="!isCurrentUser()" @click="sendClearSig">清空画板
-                            </button>
+                        <el-row type="flex" align="middle" justify="center">
+                            <canvas id="canvas" width="800" height="420"></canvas>
+                        </el-row>
+                        <el-row type="flex" align="middle" justify="center">
                             线宽 :
                             <el-select v-model="ctxGame.width" :disabled="!isCurrentUser()">
-                                <option v-for="item in 10" :value="item">{{ item }}</option>
+                                <el-option v-for="item in 20" :key="item" :label="item" :value="item"></el-option>
                             </el-select>
                             颜色 :
                             <el-select v-model="ctxGame.color" :disabled="!isCurrentUser()">
-                                <option v-for="item in ['black','blue','red','green','yellow','gray']" :value="item">
-                                    {{ item }}
-                                </option>
+                                <el-option v-for="item in ['black','blue','red','green','yellow','gray']" :key="item"
+                                           :label="item" :value="item">
+                                </el-option>
                             </el-select>
-                        </div>
+                            <el-button type="danger" :disabled="!isCurrentUser()" @click="sendClearSig">清空画板
+                            </el-button>
+                        </el-row>
                     </div>
                 </el-col>
                 <el-col :span="6">
-                    <ul class="chat-thread" ref="charThread">
-                        <li v-for="msg in msgList"><span v-html="msg"></span></li>
-                    </ul>
-                    <div>
-                        <input type="text" v-model="inputMsg">
-                        <span>
-                            <button @click="sendText" type="button">发送!</button>
-                        </span>
-                    </div>
+                    <el-row>
+                        <ul class="chat-thread" ref="charThread">
+                            <li v-for="msg in msgList"><span v-html="msg"></span></li>
+                        </ul>
+                    </el-row>
+                    <el-row>
+                        <el-input type="text" v-model="inputMsg">
+                            <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
+                        </el-input>
+
+                    </el-row>
                 </el-col>
             </el-row>
         </el-main>
@@ -79,7 +87,7 @@
         inputMsg: '',
         clockSeconds: 0,
         timeOffset: 0,
-        myInfo: {},
+        myId: '',
         allUserInfo: {},
         msgList: [],
         ctxCanvas: null,
@@ -97,8 +105,6 @@
           color: 'black',
           rightNumber: 0,
         },
-        // 是否可以绘画
-        flagDraw: false,
         // 是否可以进行用户操作
         flagUser: true,
         mousePressed: false,
@@ -116,14 +122,20 @@
       },
     },
     watch: {
+      'ctxGame.players': {
+        deep: true,
+        handler(newPlayers) {
+          Object.values(newPlayers).forEach(this.addOrUpdateUser);
+        },
+      },
       'ctxGame.width': function(newWidth, oldWidth) {
-        if (newWidth === oldWidth) {
+        if (newWidth === oldWidth || !this.isCurrentUser()) {
           return;
         }
         this.sendChangeBrush('width', newWidth);
       },
       'ctxGame.color': function(newColor, oldColor) {
-        if (newColor === oldColor) {
+        if (newColor === oldColor || !this.isCurrentUser()) {
           return;
         }
         this.sendChangeBrush('color', newColor);
@@ -161,7 +173,7 @@
               }
               let userInfo = newMap[userId];
               let msg;
-              if (this.myInfo.id === userInfo.id) {
+              if (this.myId === userInfo.id) {
                 msg = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
               } else {
                 msg = `<b>${userInfo.name}</b> 进入了房间。`;
@@ -175,13 +187,7 @@
                 continue;
               }
               let userInfo = oldMap[userId];
-              let msg;
-              if (this.myInfo.id === userInfo.id) {
-                msg = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
-              } else {
-                msg = `<b>${userInfo.name}</b> 进入了房间。`;
-              }
-              this.msgList.push(msg);
+              this.msgList.push(`<b>${userInfo.name}</b> 离开了房间。`);
             }
           } else {
             for (let i = 0; i < oldUserIds.length; i++) {
@@ -205,7 +211,7 @@
         let msgProcessors = {
           '1': function(res) { // move
             let data = res.data;
-            that.draw(data.x, data.y, data.isDown);
+            that.draw(data.x, data.y);
           },
           '2': function() { // clear
             that.clearArea();
@@ -227,10 +233,9 @@
           '10': function(res) { // join
             let data = res.data;
             if (data.assign) {
-              that.myInfo = data.info;
               that.initCtx(data);
             } else {
-              that.addUser(data.myInfo);
+              that.addOrUpdateUser(data.info);
             }
           },
           '11': function(res) { // ready
@@ -241,7 +246,7 @@
             that.removeUser(res.data);
           },
           '13': function(res) { // change name
-            that.changeUser(res.data);
+            that.addOrUpdateUser(res.data);
           },
           '20': function(res) { // update ctx
             that.updateCtx(res.data);
@@ -290,16 +295,18 @@
         };
       },
       initCtx: function(data) {
+        this.myId = data.info.id;
+        this.updateCtx(data.ctx);
+        // 同步所有在线用户
         this.allUserInfo = data.players;
         if (data.timestamp) {
           this.timeOffset = data.timestamp - new Date().getTime();
           console.log('初始化服务器时间差' + this.timeOffset + 'ms');
         }
-        this.updateCtx(data.ctx);
       },
-      sendMoveSig: function(x, y, isDown) {
+      sendMoveSig: function(x, y) {
         this.websocket.send(
-            JSON.stringify({code: 1, msg: {x: x, y: y, isDown: isDown}}));
+            JSON.stringify({code: 1, msg: {x: x, y: y}}));
       },
       sendText: function() {
         if (this.inputMsg) {
@@ -311,20 +318,18 @@
         return Date.now() + this.timeOffset;
       },
       isCurrentUser: function() {
-        return this.myInfo.id === this.ctxGame.currentUser;
+        return this.myId && this.myId === this.ctxGame.currentUser;
       },
-      draw: function(x, y, isDown) {
+      draw: function(x, y) {
         let ctxCanvas = this.ctxCanvas;
-        if (isDown) {
-          ctxCanvas.beginPath();
-          ctxCanvas.strokeStyle = this.ctxGame.color;
-          ctxCanvas.lineWidth = this.ctxGame.width;
-          ctxCanvas.lineJoin = 'round';
-          ctxCanvas.moveTo(lastX || x, lastY || y);
-          ctxCanvas.lineTo(x, y);
-          ctxCanvas.closePath();
-          ctxCanvas.stroke();
-        }
+        ctxCanvas.beginPath();
+        ctxCanvas.strokeStyle = this.ctxGame.color;
+        ctxCanvas.lineWidth = this.ctxGame.width;
+        ctxCanvas.lineJoin = 'round';
+        ctxCanvas.moveTo(lastX || x, lastY || y);
+        ctxCanvas.lineTo(x, y);
+        ctxCanvas.closePath();
+        ctxCanvas.stroke();
         lastX = x;
         lastY = y;
       },
@@ -345,7 +350,7 @@
       },
       sendReady: function() {
         this.websocket.send(JSON.stringify(
-            {code: 11, msg: {id: this.myInfo.id, status: !(this.myInfo.status > 0)}}));
+            {code: 11, msg: {id: this.myId, status: !(this.allUserInfo[this.myId].status > 0)}}));
       },
       sendNewName: function() {
         if (this.inputName) {
@@ -360,39 +365,31 @@
       removeUser: function(userInfo) {
         delete this.allUserInfo[userInfo.id];
       },
-      addUser: function(userInfo) {
-        this.allUserInfo[userInfo.id] = userInfo;
-      },
-      changeUser: function(userInfo) {
+      addOrUpdateUser: function(userInfo) {
         this.allUserInfo[userInfo.id] = userInfo;
       },
       readyUser: function(readyInfo) {
-        if (readyInfo.id === this.myInfo.id) {
-          this.myInfo = readyInfo;
-        }
         this.allUserInfo[readyInfo.id] = readyInfo;
       },
       updateCtx: function(newCtx) {
         this.ctxGame = newCtx;
       },
       readyGame: function() {
-        this.disableDraw(true);
         this.stopClockAndTimeout();
         this.clearArea();
       },
-      runGame: function(ctx) {
+      runGame: function() {
         this.clearArea();
         this.startClock();
         if (this.isCurrentUser()) {
-          this.title = '请作画:' + ctx.currentWord.word;
+          this.title = '请作画:' + this.ctxGame.currentWord.word;
         } else {
           this.title = '快猜!';
           this.startTips();
         }
       },
       waitGame: function(ctx) {
-        this.title = `答案是${this.ctxGame.currentWord.word}'。共有<b>${this.ctxGame.rightNumber}</b>人猜对`;
-        this.allUserInfo = this.ctxGame.players;
+        this.title = `答案是${this.ctxGame.currentWord.word}。共有<b>${this.ctxGame.rightNumber}</b>人猜对`;
         this.startClock(ctx);
       },
       endGame: function(ctx) {
@@ -418,9 +415,6 @@
       disableUserBtn: function(flag) {
         this.flagUser = !flag;
       },
-      disableDraw: function(flag) {
-        this.flagDraw = !flag;
-      },
       countdown: function(targetTime) {
         let serverTime = this.getServerTime();
         let diff = targetTime - serverTime;
@@ -429,7 +423,7 @@
         }
         diff /= 1000;
 
-        this.clockSeconds = diff;
+        this.clockSeconds = Math.floor(diff);
         if (diff <= 0) {
           this.stopClockAndTimeout();
         }
@@ -439,13 +433,13 @@
           this.clockIds.forEach(function(val) {
             clearInterval(val);
           });
-          this.clockIds.clear();
+          this.clockIds.splice(0, this.clockIds.length);
         }
         if (this.timeoutIds.length > 0) {
           this.timeoutIds.forEach(function(val) {
             clearTimeout(val);
           });
-          this.timeoutIds.clear();
+          this.timeoutIds.splice(0, this.timeoutIds.length);
         }
       },
     },
@@ -502,5 +496,11 @@
         background-color: rgba(25, 147, 147, 0.2);
         margin: 0 15px 20px 0;
         color: #0AD5C1;
+    }
+
+    #canvas {
+        border: 2px solid #6699cc;
+        padding: 16px 0 16px 0;
+
     }
 </style>

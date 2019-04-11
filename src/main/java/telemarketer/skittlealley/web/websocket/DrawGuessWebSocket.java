@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toMap;
 import static telemarketer.skittlealley.util.Constant.GAME_WEB_SOCKET_PREFIX;
 
 /**
@@ -70,10 +71,7 @@ public class DrawGuessWebSocket implements WebSocketHandler {
                 ImmutableMap.of("info", info))).setExcept(id);
         HashMap<String, Object> json = Maps.newHashMapWithExpectedSize(5);
         json.put("info", info);
-        json.put("players", clients.values()
-                .stream()
-                .map((w) -> w.getAttributes().get("info"))
-                .collect(Collectors.toList()));
+        json.put("players", getAllOnlinePlayers());
         json.put("ctx", ctx);
         json.put("assign", true);
         json.put("timestamp", Instant.now().toEpochMilli());
@@ -83,6 +81,12 @@ public class DrawGuessWebSocket implements WebSocketHandler {
         }
         return Flux.just(broadMsg, toMsg);
 
+    }
+
+    private Map<String, Object> getAllOnlinePlayers() {
+        return clients.entrySet().stream()
+                .map(entry -> Pair.of(entry.getKey(), entry.getValue().getAttributes().get("info")))
+                .collect(toMap(Pair::getKey, Pair::getValue));
     }
 
     private void afterConnectionClosed(WebSocketSession session) {
