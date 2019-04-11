@@ -2,9 +2,11 @@
     <el-container>
         <el-header>
             <el-row type="flex" justify="space-between" :gutter="20">
-                <el-col :span="6"><span v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span></el-col>
+                <el-col :span="6" type="flex" align="middle" justify="center"><span v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span>
+                </el-col>
                 <el-col :span="12" type="flex" align="middle" justify="center"><h2 v-html="title"></h2></el-col>
-                <el-col :span="6"><span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span></el-col>
+                <el-col :span="6" type="flex" align="middle" justify="center"><span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span>
+                </el-col>
             </el-row>
         </el-header>
         <el-main>
@@ -12,6 +14,12 @@
                 <el-col :span="6">
                     <el-row>
                         <ul class="user-thread">
+                            <li v-for="(userInfo, id) in allUserInfo"
+                                v-bind:style="{ color: myId === id ? '#5cb85c' : '' }">
+                                <span class="user_name"> <span v-if="userInfo.status > 0"
+                                                               class="el-icon-success"></span> {{ userInfo.name }}  </span>
+                                <span class="user_score">[ {{ userInfo.score }} ]</span>
+                            </li>
                         </ul>
                     </el-row>
                     <el-row>
@@ -23,7 +31,7 @@
                             </el-button>
                             <el-button slot="append" plain type="primary" @click="ready"
                                        :disabled="this.ctxGame.status !== constants.GAME_READY || !flagUser"
-                            >准备
+                            > {{ myInfo.status > 0 ? '取消' : '准备' }}
                             </el-button>
                         </el-input>
 
@@ -36,16 +44,16 @@
                         </el-row>
                         <el-row type="flex" align="middle" justify="center">
                             线宽 :
-                            <el-select v-model="ctxGame.width" :disabled="!isCurrentUser()">
+                            <el-select v-model="ctxGame.width" :disabled="!isCurrentUser">
                                 <el-option v-for="item in 20" :key="item" :label="item" :value="item"></el-option>
                             </el-select>
                             颜色 :
-                            <el-select v-model="ctxGame.color" :disabled="!isCurrentUser()">
+                            <el-select v-model="ctxGame.color" :disabled="!isCurrentUser">
                                 <el-option v-for="item in ['black','blue','red','green','yellow','gray']" :key="item"
                                            :label="item" :value="item">
                                 </el-option>
                             </el-select>
-                            <el-button type="danger" :disabled="!isCurrentUser()" @click="sendClearSig">清空画板
+                            <el-button type="danger" :disabled="!isCurrentUser" @click="sendClearSig">清空画板
                             </el-button>
                         </el-row>
                     </div>
@@ -82,7 +90,6 @@
           GAME_END: 3,
         },
         title: '正在连接中...',
-        currentUser: '',
         inputName: '',
         inputMsg: '',
         clockSeconds: 0,
@@ -120,22 +127,39 @@
         }
         return this.allUserInfo[this.ctxGame.currentUser].name;
       },
+      allUserInfoBridge: function() {
+        return Object.assign({}, this.allUserInfo);
+      },
+      isCurrentUser: function() {
+        return this.myId && this.myId === this.ctxGame.currentUser;
+      },
+      myInfo: function() {
+        return this.myId ? this.allUserInfo[this.myId] : {};
+      },
     },
     watch: {
       'ctxGame.players': {
         deep: true,
         handler(newPlayers) {
-          Object.values(newPlayers).forEach(this.addOrUpdateUser);
+          let players = Object.values(newPlayers);
+          if (players.length > 0) {
+            players.forEach(this.addOrUpdateUser);
+          } else {
+            Object.values(this.allUserInfo).forEach(function(info) {
+              info.status = 0;
+              info.score = 0;
+            });
+          }
         },
       },
       'ctxGame.width': function(newWidth, oldWidth) {
-        if (newWidth === oldWidth || !this.isCurrentUser()) {
+        if (newWidth === oldWidth || !this.isCurrentUser) {
           return;
         }
         this.sendChangeBrush('width', newWidth);
       },
       'ctxGame.color': function(newColor, oldColor) {
-        if (newColor === oldColor || !this.isCurrentUser()) {
+        if (newColor === oldColor || !this.isCurrentUser) {
           return;
         }
         this.sendChangeBrush('color', newColor);
@@ -161,11 +185,12 @@
           this.msgList.splice(0, MAX_MSG_COUNT - this.msgList.length);
         }
       },
-      allUserInfo: {
+      allUserInfoBridge: {
         handler(newMap, oldMap) {
           let newUserIds = Object.getOwnPropertyNames(newMap);
           let oldUserIds = Object.getOwnPropertyNames(oldMap);
           if (newUserIds.length > oldUserIds.length) {
+            let meJoined;
             for (let i = 0; i < newUserIds.length; i++) {
               let userId = newUserIds[i];
               if (oldMap[userId]) {
@@ -174,11 +199,15 @@
               let userInfo = newMap[userId];
               let msg;
               if (this.myId === userInfo.id) {
-                msg = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
+                meJoined = `<b>你</b> 进入了房间。名称为:${userInfo.name}。`;
+                continue;
               } else {
                 msg = `<b>${userInfo.name}</b> 进入了房间。`;
               }
               this.msgList.push(msg);
+            }
+            if (meJoined) {
+              this.msgList.push(meJoined);
             }
           } else if (oldUserIds.length > newUserIds.length) {
             for (let i = 0; i < oldUserIds.length; i++) {
@@ -211,7 +240,7 @@
         let msgProcessors = {
           '1': function(res) { // move
             let data = res.data;
-            that.draw(data.x, data.y);
+            that.draw(data.x, data.y, data.isBegin);
           },
           '2': function() { // clear
             that.clearArea();
@@ -240,7 +269,7 @@
           },
           '11': function(res) { // ready
             let data = res.data;
-            that.readyUser(data);
+            that.addOrUpdateUser(data);
           },
           '12': function(res) { // leave
             that.removeUser(res.data);
@@ -272,41 +301,55 @@
         };
       },
       initCanvas: function() {
-        let canvas = this.ctxCanvas = document.getElementById('canvas').getContext('2d');
+        if (this.ctxCanvas) {
+          return;
+        }
+        let canvas = document.getElementById('canvas');
+        this.ctxCanvas = canvas.getContext('2d');
         let that = this;
-        canvas.onmousedown = function(e) {
-          that.mousePressed = true;
-          that.sendMoveSig(e.pageX - canvas.offset().left,
-              e.pageY - canvas.offset().top, false);
-        };
 
-        canvas.onmousemove = function(e) {
-          if (that.mousePressed) {
-            that.sendMoveSig(e.pageX - canvas.offset().left,
-                e.pageY - canvas.offset().top, true);
+        function getXAndY(mouseEvent, canvas, isBegin) {
+          let rect = canvas.getBoundingClientRect();
+          return {
+            x: mouseEvent.clientX - rect.left,
+            y: mouseEvent.clientY - rect.top,
+            isBegin: isBegin,
+          };
+        }
+
+        canvas.addEventListener('mousedown', function(e) {
+          if (that.isCurrentUser) {
+            that.mousePressed = true;
+            that.sendMoveSig(getXAndY(e, canvas, true));
           }
-        };
 
-        canvas.onmouseup = function(e) {
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+          if (that.isCurrentUser && that.mousePressed) {
+            that.sendMoveSig(getXAndY(e, canvas, false));
+          }
+        });
+
+        canvas.addEventListener('mouseup', function(e) {
           that.mousePressed = false;
-        };
-        canvas.onmouseleave = function(e) {
+        });
+        canvas.addEventListener('mouseleave', function(e) {
           that.mousePressed = false;
-        };
+        });
       },
       initCtx: function(data) {
-        this.myId = data.info.id;
         this.updateCtx(data.ctx);
         // 同步所有在线用户
         this.allUserInfo = data.players;
+        this.myId = data.info;
         if (data.timestamp) {
           this.timeOffset = data.timestamp - new Date().getTime();
           console.log('初始化服务器时间差' + this.timeOffset + 'ms');
         }
       },
-      sendMoveSig: function(x, y) {
-        this.websocket.send(
-            JSON.stringify({code: 1, msg: {x: x, y: y}}));
+      sendMoveSig: function(xy) {
+        this.websocket.send(JSON.stringify({code: 1, msg: xy}));
       },
       sendText: function() {
         if (this.inputMsg) {
@@ -317,24 +360,22 @@
       getServerTime: function() {
         return Date.now() + this.timeOffset;
       },
-      isCurrentUser: function() {
-        return this.myId && this.myId === this.ctxGame.currentUser;
-      },
-      draw: function(x, y) {
+      draw: function(x, y, isBegin) {
         let ctxCanvas = this.ctxCanvas;
-        ctxCanvas.beginPath();
-        ctxCanvas.strokeStyle = this.ctxGame.color;
-        ctxCanvas.lineWidth = this.ctxGame.width;
-        ctxCanvas.lineJoin = 'round';
-        ctxCanvas.moveTo(lastX || x, lastY || y);
-        ctxCanvas.lineTo(x, y);
-        ctxCanvas.closePath();
-        ctxCanvas.stroke();
+        if (!isBegin) {
+          ctxCanvas.beginPath();
+          ctxCanvas.strokeStyle = this.ctxGame.color;
+          ctxCanvas.lineWidth = this.ctxGame.width;
+          ctxCanvas.lineJoin = 'round';
+          ctxCanvas.moveTo(lastX || x, lastY || y);
+          ctxCanvas.lineTo(x, y);
+          ctxCanvas.closePath();
+          ctxCanvas.stroke();
+        }
         lastX = x;
         lastY = y;
       },
       clearArea: function() {
-        // Use the identity matrix while clearing the canvas
         this.ctxCanvas.setTransform(1, 0, 0, 1, 0, 0);
         this.ctxCanvas.clearRect(0, 0, this.ctxCanvas.canvas.width, this.ctxCanvas.canvas.height);
       },
@@ -349,8 +390,13 @@
         this.sendReady();
       },
       sendReady: function() {
+        this.disableUserBtn(true);
         this.websocket.send(JSON.stringify(
-            {code: 11, msg: {id: this.myId, status: !(this.allUserInfo[this.myId].status > 0)}}));
+            {code: 11, msg: {id: this.myId, status: !(this.myInfo.status > 0)}}));
+        let that = this;
+        setTimeout(function() {
+          that.disableUserBtn(false);
+        }, 1000);
       },
       sendNewName: function() {
         if (this.inputName) {
@@ -363,13 +409,10 @@
         }
       },
       removeUser: function(userInfo) {
-        delete this.allUserInfo[userInfo.id];
+        this.$delete(this.allUserInfo, userInfo.id);
       },
       addOrUpdateUser: function(userInfo) {
-        this.allUserInfo[userInfo.id] = userInfo;
-      },
-      readyUser: function(readyInfo) {
-        this.allUserInfo[readyInfo.id] = readyInfo;
+        this.$set(this.allUserInfo, userInfo.id, userInfo);
       },
       updateCtx: function(newCtx) {
         this.ctxGame = newCtx;
@@ -377,11 +420,13 @@
       readyGame: function() {
         this.stopClockAndTimeout();
         this.clearArea();
+        this.title = '你画我猜';
+        this.clockSeconds = 0;
       },
       runGame: function() {
         this.clearArea();
         this.startClock();
-        if (this.isCurrentUser()) {
+        if (this.isCurrentUser) {
           this.title = '请作画:' + this.ctxGame.currentWord.word;
         } else {
           this.title = '快猜!';
@@ -446,11 +491,11 @@
     created() {
     },
     mounted() {
-      let that = this;
-      window.addEventListener('load', () => {
-        that.initCanvas();
-        that.initWebsocket();
-      });
+      this.initCanvas();
+      this.initWebsocket();
+    },
+    destroyed() {
+      this.websocket.close();
     },
   };
 </script>

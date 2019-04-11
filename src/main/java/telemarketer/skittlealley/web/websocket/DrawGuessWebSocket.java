@@ -70,7 +70,7 @@ public class DrawGuessWebSocket implements WebSocketHandler {
         MsgModel broadMsg = new MsgModel(ApiResponse.code(DrawCode.USER_JOIN.getCode(),
                 ImmutableMap.of("info", info))).setExcept(id);
         HashMap<String, Object> json = Maps.newHashMapWithExpectedSize(5);
-        json.put("info", info);
+        json.put("info", id);
         json.put("players", getAllOnlinePlayers());
         json.put("ctx", ctx);
         json.put("assign", true);
