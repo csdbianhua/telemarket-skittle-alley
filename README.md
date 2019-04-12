@@ -13,6 +13,11 @@ Telemarket-skittle-alley
 
 在开发环境下可以分别单独启动前端项目和后端项目。也可以将前端合并到后端项目一起运行。需要安装`node 8`以上以执行前端资源编译。
 
+``` bash
+cd src/main/front
+npm install
+```
+
 ### 1.分别单独启动
 后端服务执行main方法即可
 
@@ -21,7 +26,7 @@ Telemarket-skittle-alley
 cd src/main/front
 npm run start
 ```
-访问http://localhost:8080/index.html即可，此时后端请求会被代理
+访问 http://localhost:8080/index.html 即可，此时后端请求会被代理
 
 
 ### 2. 合并启动
@@ -41,7 +46,7 @@ npm run start
 
 词汇的表在 `sql/data.sql`
 
-也可以运行时自行提交 uri为 `/games/draw_guess/word_submit`
+也可以运行时自行提交
 
 > 如果运行过程无法正确地进行游戏状态迁移（具体表现为倒计时结束后无响应），请确认IDE在编译过程中执行了aspectj的编译。
 
