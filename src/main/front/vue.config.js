@@ -1,5 +1,4 @@
 module.exports = {
-  publicPath: '/index.html',
   devServer: {
     disableHostCheck: true,
     proxy: {

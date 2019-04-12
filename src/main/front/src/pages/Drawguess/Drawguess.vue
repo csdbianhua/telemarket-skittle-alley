@@ -26,7 +26,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputName" v-on:keyup.enter="sendNewName"
+                        <el-input type="text" v-model="inputName" v-on:keyup.enter.native="sendNewName"
                                   :disabled="this.ctxGame.status !== constants.GAME_READY">
                             <el-button slot="append" plain type="primary" @click="sendNewName"
                                        :disabled="this.ctxGame.status !== constants.GAME_READY"
@@ -43,27 +43,24 @@
                 <el-col :span="12">
                     <div style="align-content: center;">
                         <el-row type="flex" align="middle" justify="center">
-                            <canvas id="canvas" width="800" height="420"></canvas>
+                            <canvas id="canvas" width="800" height="600"></canvas>
                         </el-row>
-                        <el-row type="flex" align="middle" :gutter="10" style="margin-top: 10px;" justify="center">
+                        <el-row type="flex" align="middle" :gutter="10" style="margin-top: 10px;"
+                                justify="space-around">
                             <el-col :span="2">
                                 <span>线宽 :</span>
                             </el-col>
                             <el-col :span="6">
                                 <el-select v-model="ctxGame.width" :disabled="!isCurrentUser">
-                                    <el-option v-for="item in 20" :key="item" :label="item" :value="item"></el-option>
+                                    <el-option v-for="item in 30" :key="item" :label="item" :value="item"></el-option>
                                 </el-select>
                             </el-col>
                             <el-col :span="2">
                                 <span>颜色 :</span>
                             </el-col>
                             <el-col :span="6">
-                                <el-select v-model="ctxGame.color" :disabled="!isCurrentUser">
-                                    <el-option v-for="item in ['black','blue','red','green','yellow','gray']"
-                                               :key="item"
-                                               :label="item" :value="item">
-                                    </el-option>
-                                </el-select>
+                                <el-color-picker v-model="ctxGame.color" :show-alpha="true"
+                                                 :disabled="!isCurrentUser"></el-color-picker>
                             </el-col>
                             <el-col :span="3">
                                 <el-button type="danger" size="mini" :disabled="!isCurrentUser" @click="sendClearSig">
@@ -151,8 +148,8 @@
           },
           endTime: 0,
           players: {},
-          width: 1,
-          color: 'black',
+          width: 9,
+          color: '#409EFF',
           rightNumber: 0,
         },
         // 是否可以进行用户操作
@@ -221,7 +218,7 @@
       },
       msgList: function() {
         if (this.msgList.length > MAX_MSG_COUNT) {
-          this.msgList.splice(0, MAX_MSG_COUNT - this.msgList.length);
+          this.msgList.splice(0, this.msgList.length - MAX_MSG_COUNT);
         }
         let charThread = this.$refs.charThread;
         process.nextTick(function() {
@@ -559,17 +556,12 @@
 </script>
 <style lang="scss" scoped>
 
-    h1, h2, h3, h4, strong {
-        font-weight: 600;
-        color: #2c3e50;
-    }
-
     .chat-thread {
         list-style: none;
         overflow-y: auto;
         overflow-x: hidden;
         padding-left: 0;
-        height: 420px;
+        height: 620px;
     }
 
     .user-thread {
@@ -577,7 +569,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         padding-left: 0;
-        height: 420px;
+        height: 620px;
     }
 
     .chat-thread li {
