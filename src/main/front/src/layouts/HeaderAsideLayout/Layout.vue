@@ -1,7 +1,7 @@
 <template>
     <div class="app-wrapper">
         <side-bar class="sidebar-container"></side-bar>
-        <div class="main-container">
+        <div class="main-container" style="overflow: auto;min-width: 1600px">
             <nav-bar></nav-bar>
             <app-main></app-main>
         </div>

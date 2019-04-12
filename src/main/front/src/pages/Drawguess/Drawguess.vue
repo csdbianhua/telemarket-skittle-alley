@@ -23,7 +23,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputName"
+                        <el-input type="text" v-model="inputName" v-on:keyup.enter="sendNewName"
                                   :disabled="this.ctxGame.status !== constants.GAME_READY">
                             <el-button slot="append" plain type="primary" @click="sendNewName"
                                        :disabled="this.ctxGame.status !== constants.GAME_READY"
@@ -65,7 +65,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputMsg">
+                        <el-input type="text" v-model="inputMsg" v-on:keyup.enter="sendText">
                             <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
                         </el-input>
 
@@ -177,13 +177,13 @@
         }
       },
       msgList: function() {
-        let charThread = this.$refs.charThread;
-        charThread.animate({
-          scrollTop: charThread.scrollHeight - charThread.scrollTop,
-        }, 300);
         if (this.msgList.length > MAX_MSG_COUNT) {
           this.msgList.splice(0, MAX_MSG_COUNT - this.msgList.length);
         }
+        let charThread = this.$refs.charThread;
+        process.nextTick(function() {
+          charThread.scrollTop = charThread.scrollHeight;
+        });
       },
       allUserInfoBridge: {
         handler(newMap, oldMap) {
