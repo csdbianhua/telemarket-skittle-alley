@@ -2,10 +2,13 @@
     <el-container>
         <el-header>
             <el-row type="flex" justify="space-between" :gutter="20">
-                <el-col :span="6" type="flex" align="middle" justify="center"><span v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span>
+                <el-col :span="6" type="flex" align="middle" justify="center">
+                    <span style="margin: 10px 10px 10px 10px"
+                          v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span>
                 </el-col>
                 <el-col :span="12" type="flex" align="middle" justify="center"><h2 v-html="title"></h2></el-col>
-                <el-col :span="6" type="flex" align="middle" justify="center"><span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span>
+                <el-col :span="6" type="flex" align="middle" justify="center">
+                    <span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span>
                 </el-col>
             </el-row>
         </el-header>
@@ -23,7 +26,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputName"
+                        <el-input type="text" v-model="inputName" v-on:keyup.enter="sendNewName"
                                   :disabled="this.ctxGame.status !== constants.GAME_READY">
                             <el-button slot="append" plain type="primary" @click="sendNewName"
                                        :disabled="this.ctxGame.status !== constants.GAME_READY"
@@ -42,19 +45,54 @@
                         <el-row type="flex" align="middle" justify="center">
                             <canvas id="canvas" width="800" height="420"></canvas>
                         </el-row>
-                        <el-row type="flex" align="middle" justify="center">
-                            线宽 :
-                            <el-select v-model="ctxGame.width" :disabled="!isCurrentUser">
-                                <el-option v-for="item in 20" :key="item" :label="item" :value="item"></el-option>
-                            </el-select>
-                            颜色 :
-                            <el-select v-model="ctxGame.color" :disabled="!isCurrentUser">
-                                <el-option v-for="item in ['black','blue','red','green','yellow','gray']" :key="item"
-                                           :label="item" :value="item">
-                                </el-option>
-                            </el-select>
-                            <el-button type="danger" :disabled="!isCurrentUser" @click="sendClearSig">清空画板
-                            </el-button>
+                        <el-row type="flex" align="middle" :gutter="10" style="margin-top: 10px;" justify="center">
+                            <el-col :span="2">
+                                <span>线宽 :</span>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-select v-model="ctxGame.width" :disabled="!isCurrentUser">
+                                    <el-option v-for="item in 20" :key="item" :label="item" :value="item"></el-option>
+                                </el-select>
+                            </el-col>
+                            <el-col :span="2">
+                                <span>颜色 :</span>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-select v-model="ctxGame.color" :disabled="!isCurrentUser">
+                                    <el-option v-for="item in ['black','blue','red','green','yellow','gray']"
+                                               :key="item"
+                                               :label="item" :value="item">
+                                    </el-option>
+                                </el-select>
+                            </el-col>
+                            <el-col :span="3">
+                                <el-button type="danger" size="mini" :disabled="!isCurrentUser" @click="sendClearSig">
+                                    清空画板
+                                </el-button>
+                            </el-col>
+                            <el-col :span="3">
+                                <el-popover
+                                        placement="right"
+                                        width="400"
+                                        trigger="click">
+                                    <el-form v-model="wordSuggest">
+                                        <el-form-item label="词汇">
+                                            <el-input v-model="wordSuggest.inputWord" type="text"
+                                                      maxlength="10"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="词汇提示">
+                                            <el-input v-model="wordSuggest.inputTip" type="text"
+                                                      maxlength="15"></el-input>
+                                        </el-form-item>
+                                        <el-form-item>
+                                            <el-button type="primary" size="mini" @click="submitWord">提交</el-button>
+                                        </el-form-item>
+                                    </el-form>
+                                    <el-button slot="reference" type="success" size="mini">
+                                        提交新词汇
+                                    </el-button>
+                                </el-popover>
+                            </el-col>
                         </el-row>
                     </div>
                 </el-col>
@@ -65,7 +103,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputMsg">
+                        <el-input type="text" v-model="inputMsg" v-on:keyup.enter="sendText">
                             <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
                         </el-input>
 
@@ -76,6 +114,7 @@
     </el-container>
 </template>
 <script>
+  const axios = require('axios');
 
   let lastX, lastY;
   const MAX_MSG_COUNT = 50;
@@ -88,6 +127,10 @@
           GAME_RUN: 1,
           GAME_WAIT: 2,
           GAME_END: 3,
+        },
+        wordSuggest: {
+          inputWord: '',
+          inputTip: '',
         },
         title: '正在连接中...',
         inputName: '',
@@ -177,13 +220,13 @@
         }
       },
       msgList: function() {
-        let charThread = this.$refs.charThread;
-        charThread.animate({
-          scrollTop: charThread.scrollHeight - charThread.scrollTop,
-        }, 300);
         if (this.msgList.length > MAX_MSG_COUNT) {
           this.msgList.splice(0, MAX_MSG_COUNT - this.msgList.length);
         }
+        let charThread = this.$refs.charThread;
+        process.nextTick(function() {
+          charThread.scrollTop = charThread.scrollHeight;
+        });
       },
       allUserInfoBridge: {
         handler(newMap, oldMap) {
@@ -486,6 +529,21 @@
           });
           this.timeoutIds.splice(0, this.timeoutIds.length);
         }
+      },
+      submitWord: function() {
+        if (!this.wordSuggest.inputTip || !this.wordSuggest.inputWord) {
+          return;
+        }
+        let that = this;
+        axios.post('/api/games/draw_guess/word_submit', this.wordSuggest).then(function(response) {
+          that.wordSuggest.inputTip = '';
+          that.wordSuggest.inputWord = '';
+          that.$message.info('提交成功');
+        }).catch(function(err) {
+          console.error(err);
+          that.$message.error('提交失败');
+        });
+
       },
     },
     created() {

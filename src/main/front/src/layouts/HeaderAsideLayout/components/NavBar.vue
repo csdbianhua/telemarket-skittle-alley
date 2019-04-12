@@ -6,33 +6,13 @@
                     <span class="menu-icon"><i class="el-icon-search icon"></i></span>
                     <span class="menu-icon"><i class="el-icon-message icon"></i></span>
                     <span class="menu-icon">
-            <el-badge is-dot class="item">
-              <i class="el-icon-bell icon"></i>
-            </el-badge>
-          </span>
+                        <el-badge is-dot class="item"><i class="el-icon-bell icon"></i></el-badge>
+                    </span>
                 </div>
-                <el-dropdown>
-                    <div class="user-profile-body">
-                        <img class="user-avatar"
-                             src="https://img.alicdn.com/tfs/TB1ONhloamWBuNjy1XaXXXCbXXa-200-200.png">
-                        <span class="user-name">我</span>
-                    </div>
-                    <el-dropdown-menu class="user-dropdown" slot="dropdown">
-                        <router-link to="/">
-                            <el-dropdown-item>
-                                我的主页
-                            </el-dropdown-item>
-                        </router-link>
-                        <router-link to="/">
-                            <el-dropdown-item>
-                                个人设置
-                            </el-dropdown-item>
-                        </router-link>
-                        <el-dropdown-item>
-                            <span @click="logout" style="display:block;">退出</span>
-                        </el-dropdown-item>
-                    </el-dropdown-menu>
-                </el-dropdown>
+                <div class="user-profile-body">
+                    <img class="user-avatar" src="https://img.alicdn.com/tfs/TB1ONhloamWBuNjy1XaXXXCbXXa-200-200.png">
+                    <span class="user-name">我</span>
+                </div>
             </div>
         </div>
     </el-menu>
@@ -42,11 +22,7 @@
 
   export default {
     name: 'NavBar',
-    methods: {
-      logout() {
-        console.log('Logout');
-      },
-    },
+    methods: {},
   };
 </script>
 
