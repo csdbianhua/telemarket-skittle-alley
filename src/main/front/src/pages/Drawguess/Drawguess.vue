@@ -1,14 +1,14 @@
 <template>
     <el-container>
         <el-header>
-            <el-row type="flex" justify="space-between" :gutter="20">
+            <el-row type="flex" justify="center" :gutter="20">
                 <el-col :span="6" type="flex" align="middle" justify="center">
-                    <span style="margin: 10px 10px 10px 10px"
-                          v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</span>
+                    <h3 style="margin: 10px 10px 10px 10px"
+                        v-if="ctxGame.currentUser">当前画师 {{ currentUserName }}</h3>
                 </el-col>
                 <el-col :span="12" type="flex" align="middle" justify="center"><h2 v-html="title"></h2></el-col>
                 <el-col :span="6" type="flex" align="middle" justify="center">
-                    <span v-if="clockSeconds"> 还剩{{  clockSeconds }}秒 </span>
+                    <h3 v-if="clockSeconds"> 还剩{{ clockSeconds }}秒 </h3>
                 </el-col>
             </el-row>
         </el-header>
@@ -72,8 +72,8 @@
                             </el-col>
                             <el-col :span="3">
                                 <el-popover
-                                        placement="right"
-                                        width="400"
+                                        placement="bottom"
+                                        width="200"
                                         trigger="click">
                                     <el-form v-model="wordSuggest">
                                         <el-form-item label="词汇">
@@ -85,7 +85,7 @@
                                                       maxlength="15"></el-input>
                                         </el-form-item>
                                         <el-form-item>
-                                            <el-button type="primary" size="mini" @click="submitWord">提交</el-button>
+                                            <el-button type="success" size="mini" @click="submitWord">提交</el-button>
                                         </el-form-item>
                                     </el-form>
                                     <el-button slot="reference" type="success" size="mini">
@@ -103,7 +103,7 @@
                         </ul>
                     </el-row>
                     <el-row>
-                        <el-input type="text" v-model="inputMsg" v-on:keyup.enter="sendText">
+                        <el-input type="text" v-model="inputMsg" v-on:keyup.enter.native="sendText">
                             <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
                         </el-input>
 
@@ -558,6 +558,12 @@
   };
 </script>
 <style lang="scss" scoped>
+
+    h1, h2, h3, h4, strong {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
     .chat-thread {
         list-style: none;
         overflow-y: auto;
