@@ -28,7 +28,7 @@ public class DrawGuessContext {
     private static final Logger log = LoggerFactory.getLogger(DrawGuessContext.class);
 
     public static final int DEFAULT_WIDTH = 9;
-    public static final String DEFAULT_COLOR = "blue";
+    public static final String DEFAULT_COLOR = "#409EFF";
     private String currentUser;
     private DrawGameStatus status;
     private DrawWordInfo currentWord;
