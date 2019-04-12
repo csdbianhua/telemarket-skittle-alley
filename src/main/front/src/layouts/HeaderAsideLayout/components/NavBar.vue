@@ -2,13 +2,6 @@
     <el-menu class="navbar" mode="horizontal">
         <div class="user-profile-container" trigger="click">
             <div class="user-profile-content">
-                <div class="menu-icons">
-                    <span class="menu-icon"><i class="el-icon-search icon"></i></span>
-                    <span class="menu-icon"><i class="el-icon-message icon"></i></span>
-                    <span class="menu-icon">
-                        <el-badge is-dot class="item"><i class="el-icon-bell icon"></i></el-badge>
-                    </span>
-                </div>
                 <div class="user-profile-body">
                     <img class="user-avatar" src="https://img.alicdn.com/tfs/TB1ONhloamWBuNjy1XaXXXCbXXa-200-200.png">
                     <span class="user-name">我</span>
