@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,8 +84,7 @@ public class DrawGuessWebSocket implements WebSocketHandler {
 
     private Map<String, Object> getAllOnlinePlayers() {
         return clients.entrySet().stream()
-                .map(entry -> Pair.of(entry.getKey(), entry.getValue().getAttributes().get("info")))
-                .collect(toMap(Pair::getKey, Pair::getValue));
+                .collect(toMap(Map.Entry::getKey, entry -> entry.getValue().getAttributes().get("info")));
     }
 
     private void afterConnectionClosed(WebSocketSession session) {
