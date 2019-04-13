@@ -7,7 +7,7 @@
 
   import * as PIXI from 'pixi.js';
 
-  const resourcePattern = new RegExp('/.*?/.*?_(\\d+)\\.\\w*\\.?\\w+?');
+  const resourcePattern = new RegExp('/.*?/.*?_(\\d+)\\.\\w*?\\.?\\w+?');
   const PI = 3.1415926;
   const WIDTH = 1400;
   const HEIGHT = 800;
@@ -35,8 +35,8 @@
         if (this.isUp && this.press) this.press();
         this.isDown = true;
         this.isUp = false;
+        event.preventDefault();
       }
-      event.preventDefault();
     };
 
     upHandler(event) {
@@ -44,8 +44,8 @@
         if (this.isDown && this.release) this.release();
         this.isDown = false;
         this.isUp = true;
+        event.preventDefault();
       }
-      event.preventDefault();
     }
 
     destroy() {
@@ -64,14 +64,16 @@
    */
   const PERSON_STATUS_PRIORITY = {
     'idle': 0,
-    'move': 0,
-    'shoot': 0,
-    'reload': 0,
+    'move': 1,
+    'shoot': 2,
+    'reload': 3,
   };
 
   class Person {
 
-    constructor(resourceMap) {
+    speed = 5;
+
+    constructor(resourceMap, ctx) {
       this._status = new Set();
       this._status.add(PERSON_STATUS.IDLE);
       this._angle = 0;
@@ -80,6 +82,9 @@
       this.frameIndex = 0;
       this.container.x = 200;
       this.container.y = 200;
+      this.container.scale.set(0.5, 0.5);
+      this.lastShootTime = Date.now();
+      this.ctx = ctx;
     }
 
     __removeStatus(status) {
@@ -107,6 +112,9 @@
         case PERSON_STATUS.RELOAD:
           this.__removeStatus(PERSON_STATUS.SHOOT);
           break;
+      }
+      for (let status of this._status) {
+        this.spriteMap[status].forEach(e => e.visible && (e.visible = false));
       }
       this._status.add(status);
     }
@@ -196,20 +204,31 @@
         switch (this.angle) {
           case 0:
             if (this.container.x >= WIDTH) { return; }
-            this.container.x += 5;
+            this.container.x += this.speed;
             break;
           case 90:
             if (this.container.y >= HEIGHT) { return; }
-            this.container.y += 5;
+            this.container.y += this.speed;
             break;
           case 180:
             if (this.container.x <= 0) { return; }
-            this.container.x -= 5;
+            this.container.x -= this.speed;
             break;
           case 270:
             if (this.container.y <= 0) { return; }
-            this.container.y -= 5;
+            this.container.y -= this.speed;
             break;
+        }
+      }
+      if (this._status.has(PERSON_STATUS.SHOOT)) {
+        if (Date.now() - this.lastShootTime > 200) {
+          this.ctx.shootBullet({
+            angle: this.angle,
+            x: this.container.x,
+            y: this.container.y,
+            type: 'purple',
+          });
+          this.lastShootTime = Date.now();
         }
       }
     }
@@ -218,7 +237,7 @@
       let container = new Container();
       let spriteMap = this.spriteMap;
       container.visible = true;
-      Object.getOwnPropertyNames(resourceMap).forEach(function(key) {
+      Object.keys(resourceMap).forEach(function(key) {
         let resources = resourceMap[key];
         resources.sort(function(left, right) {
           let leftNumber = resourcePattern.exec(left)[1];
@@ -241,6 +260,122 @@
     }
   }
 
+  const BULLET_STATUS = {
+    IDLE: 'idle', MOVE: 'move',
+  };
+
+  class Bullet {
+    speed = 25;
+    xoffset = 30;
+    yoffset = 30;
+
+    constructor(resourceMap, options, ctx) {
+      this._angle = options.angle;
+      this._status = BULLET_STATUS.MOVE;
+      this.container = this._initContainer(resourceMap, options);
+      this.frameIndex = 0;
+      this.container.x = options.x;
+      this.container.y = options.y;
+      switch (this._angle) {
+        case 0:
+          this.container.x += this.xoffset;
+          this.container.y += this.yoffset;
+          break;
+        case 90:
+          this.container.x -= this.xoffset;
+          this.container.y += this.yoffset;
+          break;
+        case 180:
+          this.container.x -= this.xoffset;
+          this.container.y -= this.yoffset;
+          break;
+        case 270:
+          this.container.x += this.xoffset;
+          this.container.y -= this.yoffset;
+          break;
+      }
+      this.ctx = ctx;
+      this.container.rotation = options.angle / 360 * 2 * PI;
+    }
+
+    _initContainer(resourceMap, options) {
+      let container = new Container();
+      let resources = resourceMap[options.type];
+      container.visible = true;
+      resources.sort(function(left, right) {
+        let leftNumber = resourcePattern.exec(left)[1];
+        let rightNumber = resourcePattern.exec(right)[1];
+        return Number(leftNumber) - Number(rightNumber);
+      });
+      for (let i = 0; i < resources.length; i++) {
+        let resource = resources[i];
+        let sprite = new Sprite(TextureCache[resource]);
+        sprite.visible = false;
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 0.5;
+        container.addChild(sprite);
+      }
+      return container;
+    }
+
+    nextAction() {
+      if (this._status !== BULLET_STATUS.MOVE) {
+        this.ctx.app.stage.removeChild(this.container);
+        return;
+      }
+      let sprites = this.container.children;
+      let length = sprites.length;
+      let frameIndex = this.frameIndex++;
+      if (frameIndex >= length) {
+        frameIndex = this.frameIndex = 0;
+      }
+      for (let i = 0; i < length; i++) {
+        let child = sprites[i];
+        if (i === frameIndex) {
+          child.visible = true;
+        } else if (child.visible) {
+          child.visible = false;
+        }
+      }
+      switch (this._angle) {
+        case 0:
+          if (this.container.x >= WIDTH + 200) {
+            this.destroy();
+            return;
+          }
+          this.container.x += this.speed;
+          break;
+        case 90:
+          if (this.container.y >= HEIGHT + 200) {
+            this.destroy();
+            return;
+          }
+          this.container.y += this.speed;
+          break;
+        case 180:
+          if (this.container.x <= -200) {
+            this.destroy();
+            return;
+          }
+          this.container.x -= this.speed;
+          break;
+        case 270:
+          if (this.container.y <= -200) {
+            this.destroy();
+            return;
+          }
+          this.container.y -= this.speed;
+          break;
+      }
+    }
+
+    destroy() {
+      this.ctx.app.stage.removeChild(this.container);
+      this.ctx.items.delete(this);
+      this.ctx = null;
+    }
+  }
+
   export default {
     name: 'NoOneSurvived',
     data() {
@@ -254,7 +389,8 @@
               resolution: 1,
             },
         ),
-        items: [],
+        resourceMap: {},
+        items: new Set(),
         eventList: [],
         eventResident: {},
         keyboardListeners: [],
@@ -263,24 +399,31 @@
     computed: {},
     watch: {},
     methods: {
+      shootBullet(options) {
+        let bullet = new Bullet(this.resourceMap.bullet, options, this);
+        this.app.stage.addChild(bullet.container);
+        this.items.add(bullet);
+      },
       loadAllResource(resourcesMap) {
         let that = this;
-
         let allResources = Object.values(resourcesMap).
-            flat().
-            filter(key => !resources[key]);
+            map(spriteResourceMap => Object.values(spriteResourceMap)).flat(Infinity).filter(key => !resources[key]);
         loader.add(allResources).load(function() {
-          that.afterLoadResources(resourcesMap);
+          that.resourceMap = resourcesMap;
+          that.afterLoadResources();
         });
       },
-      afterLoadResources(resourceMap) {
-        let p = new Person(resourceMap);
+      afterLoadResources() {
+        let p = new Person(this.resourceMap.person, this);
         p.registKeyboardEvent();
         this.app.stage.addChild(p.container);
+        this.items.add(p);
+
         let items = this.items;
-        items.push(p);
-        this.eventResident['personAction'] = function() {
-          items.forEach(item => item.nextAction());
+        this.eventResident['itemAction'] = function() {
+          for (let item of items) {
+            item.nextAction();
+          }
         };
       },
     },
@@ -297,11 +440,17 @@
       let idleResources = importAll(require.context('@/assets/no_one_survived/rifle/idle', true));
       let reloadResources = importAll(require.context('@/assets/no_one_survived/rifle/reload', true));
       let shootResources = importAll(require.context('@/assets/no_one_survived/rifle/shoot', true));
+      let bulletPurpleResources = importAll(require.context('@/assets/no_one_survived/bullet/purple', true));
       this.loadAllResource({
-        move: moveResources,
-        idle: idleResources,
-        reload: reloadResources,
-        shoot: shootResources,
+        person: {
+          move: moveResources,
+          idle: idleResources,
+          reload: reloadResources,
+          shoot: shootResources,
+        },
+        bullet: {
+          purple: bulletPurpleResources,
+        },
       });
       document.getElementById('container').appendChild(this.app.view);
 
@@ -315,8 +464,10 @@
       this.app.ticker.add(delta => gameLoop(delta));
     },
     destroyed() {
+      for (let item of this.items) {
+        item.destroy && item.destroy();
+      }
       this.app.destroy();
-      this.items.forEach(item => item.destroy && item.destroy());
     },
   };
 </script>

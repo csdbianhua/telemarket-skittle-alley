@@ -9,8 +9,8 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
-import telemarketer.skittlealley.framework.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
@@ -37,9 +37,7 @@ import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
  * Time: 17-2-5
  * Email: imyijie@outlook.com
  */
-@Game(value = DrawGuess.IDENTIFY, gameName = "你画我猜",
-        attrs = "{DEFAULT_WIDTH:" + DrawGuessContext.DEFAULT_WIDTH + "," +
-                "DEFAULT_COLOR:\"" + DrawGuessContext.DEFAULT_COLOR + "\"}")
+@Service
 public class DrawGuess extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
