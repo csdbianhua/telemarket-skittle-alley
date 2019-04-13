@@ -13,6 +13,9 @@ const asideMenuConfig = [
       {
         path: '/draw_guess',
         name: '你画我猜',
+      }, {
+        path: '/no_one_survived',
+        name: '无人生还',
       },
     ],
   },

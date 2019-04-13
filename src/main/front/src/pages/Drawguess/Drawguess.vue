@@ -550,6 +550,7 @@
       this.initWebsocket();
     },
     destroyed() {
+      this.stopClockAndTimeout();
       this.websocket.close();
     },
   };
