@@ -3,8 +3,10 @@ package telemarketer.skittlealley.service.game.draw;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.service.common.RequestHandler;
 
@@ -19,8 +21,10 @@ import telemarketer.skittlealley.service.common.RequestHandler;
 public class EchoHandler implements RequestHandler {
 
     @Override
-    public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
-        response.setCode(request.getCode()).setData(JSONObject.parseObject(request.getMsg()));
+    public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
+        return Flux.just(MsgModel.content(
+                ApiResponse.builder().setCode(request.getCode()).setData(JSONObject.parseObject(request.getMsg()))
+        ));
     }
 
     @Override

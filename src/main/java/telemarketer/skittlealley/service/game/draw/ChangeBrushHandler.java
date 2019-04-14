@@ -3,8 +3,10 @@ package telemarketer.skittlealley.service.game.draw;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.service.common.RequestHandler;
@@ -27,10 +29,10 @@ public class ChangeBrushHandler implements RequestHandler {
     private static final String TYPE_NAME = "type";
 
     @Override
-    public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
+    public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
         DrawGuessContext ctx = (DrawGuessContext) session.getAttributes().get("ctx");
         if (!ctx.isCurrentUser(session.getId())) {
-            return;
+            return Flux.empty();
         }
         JSONObject obj = JSONObject.parseObject(request.getMsg());
         String type = obj.getString(TYPE_NAME);
@@ -39,7 +41,7 @@ public class ChangeBrushHandler implements RequestHandler {
         } else if (TYPE_WIDTH.equals(type)) {
             ctx.setWidth(obj.getInteger(VALUE_NAME));
         }
-        response.setCode(DRAW_CHANGE_BRUSH.getCode()).setData(obj);
+        return Flux.just(MsgModel.content(ApiResponse.builder().setCode(DRAW_CHANGE_BRUSH.getCode()).setData(obj)));
     }
 
     @Override

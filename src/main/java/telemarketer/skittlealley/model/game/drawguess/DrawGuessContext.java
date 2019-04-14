@@ -4,6 +4,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import telemarketer.skittlealley.model.GameCtx;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Time: 17-2-8
  * Email: imyijie@outlook.com
  */
-public class DrawGuessContext {
+public class DrawGuessContext implements GameCtx {
 
     private static final Logger log = LoggerFactory.getLogger(DrawGuessContext.class);
 

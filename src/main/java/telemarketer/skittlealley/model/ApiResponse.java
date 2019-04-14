@@ -19,6 +19,10 @@ public class ApiResponse {
         return response;
     }
 
+    public static ApiResponse builder() {
+        return new ApiResponse();
+    }
+
     public static ApiResponse code(int code, Object o) {
         ApiResponse response = new ApiResponse();
         response.setCode(code);

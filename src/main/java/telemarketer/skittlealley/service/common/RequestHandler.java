@@ -1,8 +1,9 @@
 package telemarketer.skittlealley.service.common;
 
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
-import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 
 /**
@@ -16,10 +17,9 @@ public interface RequestHandler {
      * 处理请求
      *
      * @param request  请求
-     * @param response 响应
      * @param session  session
      */
-    void apply(ApiRequest request, ApiResponse response, WebSocketSession session);
+    Flux<MsgModel> apply(ApiRequest request, WebSocketSession session);
 
     /**
      * 支持的命令

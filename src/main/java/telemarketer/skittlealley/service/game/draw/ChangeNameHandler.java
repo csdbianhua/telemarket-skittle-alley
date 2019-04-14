@@ -3,8 +3,10 @@ package telemarketer.skittlealley.service.game.draw;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
@@ -23,15 +25,15 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_CHANG
 @Service
 public class ChangeNameHandler implements RequestHandler {
     @Override
-    public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
+    public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
         DrawGuessContext ctx = (DrawGuessContext) session.getAttributes().get("ctx");
         if (ctx.status() != DrawGameStatus.READY) {
-            return;
+            return Flux.empty();
         }
         String name = StringEscapeUtils.escapeHtml4(request.getMsg());
         DrawPlayerInfo oldInfo = (DrawPlayerInfo) session.getAttributes().get("info");
         oldInfo.setName(name);
-        response.setCode(USER_CHANGE_NAME.getCode()).setData(oldInfo);
+        return Flux.just(MsgModel.content(ApiResponse.builder().setCode(USER_CHANGE_NAME.getCode()).setData(oldInfo)));
     }
 
     @Override

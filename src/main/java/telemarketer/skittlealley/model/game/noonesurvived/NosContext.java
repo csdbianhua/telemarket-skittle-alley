@@ -1,4 +1,6 @@
 package telemarketer.skittlealley.model.game.noonesurvived;
 
-public class NosContext {
+import telemarketer.skittlealley.model.GameCtx;
+
+public class NosContext implements GameCtx {
 }

@@ -2,6 +2,9 @@ package telemarketer.skittlealley.service.game;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.noonesurvived.NosContext;
 
 /**
@@ -10,19 +13,23 @@ import telemarketer.skittlealley.model.game.noonesurvived.NosContext;
  * @author hason
  */
 @Service
-public class NoOneSurvived {
+public class NoOneSurvived implements IWebSocketGameService<NosContext> {
 
     public static final String IDENTIFY = "nos";
 
-    public NosContext connected(WebSocketSession session) {
-        return null;
+
+    @Override
+    public Mono<NosContext> connected(WebSocketSession session) {
+        return Mono.empty();
     }
 
-    public void closed(WebSocketSession session) {
-
+    @Override
+    public Flux<MsgModel> closed(WebSocketSession session) {
+        return Flux.empty();
     }
 
-    public String handleRequest(String payloadAsText, WebSocketSession session) {
-        return null;
+    @Override
+    public Flux<MsgModel> handleRequest(String payloadAsText, WebSocketSession session) {
+        return Flux.empty();
     }
 }

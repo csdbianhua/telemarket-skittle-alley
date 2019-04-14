@@ -3,7 +3,6 @@ package telemarketer.skittlealley.service.game;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
@@ -11,8 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
 import telemarketer.skittlealley.service.common.MessageHandler;
@@ -38,7 +40,7 @@ import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
  * Email: imyijie@outlook.com
  */
 @Service
-public class DrawGuess extends MessageHandler {
+public class DrawGuess extends MessageHandler implements IWebSocketGameService<DrawGuessContext> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
     public static final String IDENTIFY = "draw_guess";
@@ -68,7 +70,8 @@ public class DrawGuess extends MessageHandler {
      * @param session 会话
      * @return 上下文
      */
-    public DrawGuessContext connected(WebSocketSession session) {
+    @Override
+    public Mono<DrawGuessContext> connected(WebSocketSession session) {
         if (ctx.get() == null) {
             ctx.compareAndSet(null, new DrawGuessContext().setStatus(DrawGameStatus.READY));
         }
@@ -80,7 +83,7 @@ public class DrawGuess extends MessageHandler {
         attributes.put("ctx", context);
         attributes.put("info", info);
         context.incrRoomPeopleNumber();
-        return context;
+        return Mono.just(context);
     }
 
     /**
@@ -88,11 +91,12 @@ public class DrawGuess extends MessageHandler {
      *
      * @param session 会话
      */
-    public DrawGuessContext closed(WebSocketSession session) {
+    @Override
+    public Flux<MsgModel> closed(WebSocketSession session) {
         DrawGuessContext context = this.ctx.get();
         context.removePlayer(session.getId());
         context.decrRoomPeopleNumber();
-        return context;
+        return Flux.just(MsgModel.content(ApiResponse.code(DrawCode.USER_LEFT.getCode(), session.getAttributes().get("info"))));
     }
 
     private DrawWordInfo randomWord() {
@@ -115,16 +119,9 @@ public class DrawGuess extends MessageHandler {
      * @return 处理结果字符串
      */
     @Override
-    public String handleRequest(String payload, WebSocketSession session) {
+    public Flux<MsgModel> handleRequest(String payload, WebSocketSession session) {
         ApiRequest request = JSONObject.parseObject(payload, ApiRequest.class);
-        ApiResponse response = new ApiResponse();
-        try {
-            handle(request, response, session);
-            return response.empty() ? StringUtils.EMPTY : JSONObject.toJSONString(response);
-        } catch (RuntimeException e) {
-            LOGGER.error("[{}]处理请求异常", IDENTIFY, e);
-            return StringUtils.EMPTY;
-        }
+        return handle(request, session);
 
     }
 

@@ -3,8 +3,10 @@ package telemarketer.skittlealley.service.game.draw;
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.service.common.RequestHandler;
 
@@ -24,14 +26,14 @@ public class ReadyHandler implements RequestHandler {
     private static final String ID_NAME = "id";
 
     @Override
-    public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
+    public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
         DrawGuessContext ctx = (DrawGuessContext) session.getAttributes().get("ctx");
         JSONObject obj = JSONObject.parseObject(request.getMsg());
         boolean ready = obj.getBooleanValue(STATUS_NAME);
         String id = obj.getString(ID_NAME);
         DrawPlayerInfo info = ((DrawPlayerInfo) session.getAttributes().get("info"));
         if (ctx.status() != DrawGameStatus.READY) {
-            return;
+            return Flux.empty();
         }
         if (ready && info.status() == DrawUserStatus.WAIT) {
             info.setStatus(DrawUserStatus.READY);
@@ -40,7 +42,7 @@ public class ReadyHandler implements RequestHandler {
             info.setStatus(DrawUserStatus.WAIT);
             ctx.removePlayer(id);
         }
-        response.setCode(USER_READY.getCode()).setData(info);
+        return Flux.just(MsgModel.content(ApiResponse.builder().setData(info).setCode(USER_READY.getCode())));
     }
 
     @Override

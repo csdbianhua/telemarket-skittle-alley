@@ -4,8 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
+import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.service.common.RequestHandler;
 
@@ -29,10 +31,10 @@ public class UserMsgHandler implements RequestHandler {
     }
 
     @Override
-    public void apply(ApiRequest request, ApiResponse response, WebSocketSession session) {
+    public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
         String msg = StringEscapeUtils.escapeHtml4(request.getMsg());
         if (StringUtils.isBlank(msg)) {
-            return;
+            return Flux.empty();
         }
         Map<String, Object> attributes = session.getAttributes();
         String id = session.getId();
@@ -49,7 +51,7 @@ public class UserMsgHandler implements RequestHandler {
         } else {
             msgs.add("<b>" + info.getName() + "</b>: " + msg);
         }
-        response.setCode(DRAW_MSG.getCode()).setData(msgs);
+        return Flux.just(MsgModel.content(ApiResponse.builder().setCode(DRAW_MSG.getCode()).setData(msgs)));
     }
 
     private void processGussPerson(DrawPlayerInfo info, DrawGuessContext ctx, String msg, ArrayList<String> msgs) {
