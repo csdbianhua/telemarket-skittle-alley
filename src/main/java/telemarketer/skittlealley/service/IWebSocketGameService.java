@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game;
+package telemarketer.skittlealley.service;
 
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;

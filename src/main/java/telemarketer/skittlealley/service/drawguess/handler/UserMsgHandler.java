@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game.draw;
+package telemarketer.skittlealley.service.drawguess.handler;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
@@ -9,7 +9,7 @@ import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.service.common.RequestHandler;
+import telemarketer.skittlealley.service.RequestHandler;
 
 import java.util.ArrayList;
 import java.util.Map;

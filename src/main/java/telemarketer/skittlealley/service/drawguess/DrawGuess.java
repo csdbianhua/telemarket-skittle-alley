@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game;
+package telemarketer.skittlealley.service.drawguess;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -17,8 +17,9 @@ import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
-import telemarketer.skittlealley.service.common.MessageHandler;
-import telemarketer.skittlealley.service.common.RequestHandler;
+import telemarketer.skittlealley.service.IWebSocketGameService;
+import telemarketer.skittlealley.service.MessageHandler;
+import telemarketer.skittlealley.service.RequestHandler;
 
 import java.time.Instant;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game;
+package telemarketer.skittlealley.service.nos;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -6,6 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.noonesurvived.NosContext;
+import telemarketer.skittlealley.service.IWebSocketGameService;
 
 /**
  * 无人生还

@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game.draw;
+package telemarketer.skittlealley.service.drawguess.handler;
 
 import com.alibaba.fastjson.JSONObject;
 import org.springframework.stereotype.Service;
@@ -9,7 +9,7 @@ import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
-import telemarketer.skittlealley.service.common.RequestHandler;
+import telemarketer.skittlealley.service.RequestHandler;
 
 import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_CHANGE_BRUSH;
 

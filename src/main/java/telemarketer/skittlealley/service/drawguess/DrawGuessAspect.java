@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.framework.aspect;
+package telemarketer.skittlealley.service.drawguess;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -17,7 +17,6 @@ import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.model.game.drawguess.DrawPlayerInfo;
-import telemarketer.skittlealley.service.game.DrawGuess;
 import telemarketer.skittlealley.web.websocket.DrawGuessWebSocket;
 
 /**
@@ -91,7 +90,7 @@ public class DrawGuessAspect {
      * @param ctx 上下文
      * @return 原返回值
      */
-    @Around(value = "execution(* telemarketer.skittlealley.service.game.DrawGuess.process*(..))  && args(ctx)",
+    @Around(value = "execution(* telemarketer.skittlealley.service.drawguess.DrawGuess.process*(..))  && args(ctx)",
             argNames = "pjp,ctx")
     public Object lockContext(ProceedingJoinPoint pjp, DrawGuessContext ctx) {
         ctx.lock();
@@ -115,7 +114,7 @@ public class DrawGuessAspect {
      *
      * @param ctx 上下文
      */
-    @AfterReturning(value = "execution(* telemarketer.skittlealley.service.game.DrawGuess.process*(..))", returning = "ctx",
+    @AfterReturning(value = "execution(* telemarketer.skittlealley.service.drawguess.DrawGuess.process*(..))", returning = "ctx",
             argNames = "ctx")
     public void notifyWebSocket(DrawGuessContext ctx) {
         if (ctx.status() == DrawGameStatus.RUN) {

@@ -8,7 +8,7 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.framework.annotation.WSHandler;
 import telemarketer.skittlealley.model.MsgModel;
-import telemarketer.skittlealley.service.game.NoOneSurvived;
+import telemarketer.skittlealley.service.nos.NoOneSurvived;
 
 import java.nio.charset.StandardCharsets;
 

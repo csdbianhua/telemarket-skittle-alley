@@ -1,4 +1,4 @@
-package telemarketer.skittlealley.service.game.draw;
+package telemarketer.skittlealley.service.drawguess.handler;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,7 @@ import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.model.game.drawguess.DrawPlayerInfo;
-import telemarketer.skittlealley.service.common.RequestHandler;
+import telemarketer.skittlealley.service.RequestHandler;
 
 import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_CHANGE_NAME;
 

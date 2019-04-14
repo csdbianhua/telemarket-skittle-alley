@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
-import telemarketer.skittlealley.service.game.DrawGuess;
+import telemarketer.skittlealley.service.drawguess.DrawGuess;
 
 
 @RestController

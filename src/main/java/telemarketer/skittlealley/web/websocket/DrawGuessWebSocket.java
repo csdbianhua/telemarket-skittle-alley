@@ -14,7 +14,7 @@ import telemarketer.skittlealley.framework.annotation.WSHandler;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
-import telemarketer.skittlealley.service.game.DrawGuess;
+import telemarketer.skittlealley.service.drawguess.DrawGuess;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

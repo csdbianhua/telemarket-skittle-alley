@@ -3,8 +3,8 @@ package telemarketer.skittlealley.framework.config;
 import org.aspectj.lang.Aspects;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import telemarketer.skittlealley.framework.aspect.DrawGuessAspect;
-import telemarketer.skittlealley.service.game.DrawGuess;
+import telemarketer.skittlealley.service.drawguess.DrawGuess;
+import telemarketer.skittlealley.service.drawguess.DrawGuessAspect;
 import telemarketer.skittlealley.web.websocket.DrawGuessWebSocket;
 
 /**
