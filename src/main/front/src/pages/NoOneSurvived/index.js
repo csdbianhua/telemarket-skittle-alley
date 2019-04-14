@@ -1,3 +1,3 @@
-import PixiTest from './NoOneSurvived.vue';
+import NoOneSurvived from './NoOneSurvived.vue';
 
-export default PixiTest;
+export default NoOneSurvived;
