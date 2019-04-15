@@ -44,7 +44,6 @@ public class NoOnSurvivedWebSocket extends BaseGameWebSocketHandler {
 
     @Override
     protected Flux<MsgModel> handleTextMessage(WebSocketSession session, WebSocketMessage message) {
-
         return gameService.handleRequest(message.getPayloadAsText(StandardCharsets.UTF_8), session);
 
     }

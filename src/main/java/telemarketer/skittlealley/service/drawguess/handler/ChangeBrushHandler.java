@@ -9,7 +9,6 @@ import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
-import telemarketer.skittlealley.service.RequestHandler;
 
 import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_CHANGE_BRUSH;
 
@@ -21,7 +20,7 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_CHANG
  * Email: imyijie@outlook.com
  */
 @Service
-public class ChangeBrushHandler implements RequestHandler {
+public class ChangeBrushHandler implements DrawGuessRequestHandler {
 
     private static final String TYPE_COLOR = "color";
     private static final String TYPE_WIDTH = "width";

@@ -8,7 +8,6 @@ import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.service.RequestHandler;
 
 import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_READY;
 
@@ -20,7 +19,7 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_READY
  * Date: 2017/2/9
  */
 @Service
-public class ReadyHandler implements RequestHandler {
+public class ReadyHandler implements DrawGuessRequestHandler {
 
     private static final String STATUS_NAME = "status";
     private static final String ID_NAME = "id";

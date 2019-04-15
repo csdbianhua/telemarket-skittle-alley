@@ -4,14 +4,13 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.MsgModel;
-import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 
 /**
  * 请求处理器。
  * <p>
  */
 @FunctionalInterface
-public interface RequestHandler {
+public interface RequestHandler<T> {
 
     /**
      * 处理请求
@@ -26,7 +25,7 @@ public interface RequestHandler {
      *
      * @return 支持命令的数组
      */
-    default DrawCode[] supported() {
-        return new DrawCode[0];
+    default T[] supported() {
+        return (T[]) new Object[0];
     }
 }

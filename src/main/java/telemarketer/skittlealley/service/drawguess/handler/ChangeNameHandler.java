@@ -11,7 +11,6 @@ import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.model.game.drawguess.DrawPlayerInfo;
-import telemarketer.skittlealley.service.RequestHandler;
 
 import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_CHANGE_NAME;
 
@@ -23,7 +22,7 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.USER_CHANG
  * Email: imyijie@outlook.com
  */
 @Service
-public class ChangeNameHandler implements RequestHandler {
+public class ChangeNameHandler implements DrawGuessRequestHandler {
     @Override
     public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
         DrawGuessContext ctx = (DrawGuessContext) session.getAttributes().get("ctx");

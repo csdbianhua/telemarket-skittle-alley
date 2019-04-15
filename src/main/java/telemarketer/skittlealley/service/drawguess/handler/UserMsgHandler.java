@@ -9,7 +9,6 @@ import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.service.RequestHandler;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -24,7 +23,7 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_MSG;
  * Date: 2017/2/8
  */
 @Service
-public class UserMsgHandler implements RequestHandler {
+public class UserMsgHandler implements DrawGuessRequestHandler {
     @Override
     public DrawCode[] supported() {
         return new DrawCode[]{DRAW_MSG};

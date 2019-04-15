@@ -17,6 +17,7 @@ import telemarketer.skittlealley.model.game.drawguess.DrawCode;
 import telemarketer.skittlealley.model.game.drawguess.DrawGameStatus;
 import telemarketer.skittlealley.model.game.drawguess.DrawGuessContext;
 import telemarketer.skittlealley.model.game.drawguess.DrawPlayerInfo;
+import telemarketer.skittlealley.service.CodeMessageHandler;
 import telemarketer.skittlealley.web.websocket.DrawGuessWebSocket;
 
 /**
@@ -27,7 +28,7 @@ import telemarketer.skittlealley.web.websocket.DrawGuessWebSocket;
  * Date: 2017/2/9
  */
 @Aspect
-public class DrawGuessAspect {
+public class DrawGuessAspect extends CodeMessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuessAspect.class);
     private DrawGuess service;
     private DrawGuessWebSocket webSocket;

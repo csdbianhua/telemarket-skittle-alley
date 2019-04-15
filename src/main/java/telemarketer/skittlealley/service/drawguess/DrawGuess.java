@@ -1,6 +1,5 @@
 package telemarketer.skittlealley.service.drawguess;
 
-import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.jooq.DSLContext;
@@ -12,14 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.*;
 import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
+import telemarketer.skittlealley.service.CodeMessageHandler;
 import telemarketer.skittlealley.service.IWebSocketGameService;
-import telemarketer.skittlealley.service.MessageHandler;
 import telemarketer.skittlealley.service.RequestHandler;
+import telemarketer.skittlealley.service.drawguess.handler.DrawGuessRequestHandler;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -41,7 +40,7 @@ import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
  * Email: imyijie@outlook.com
  */
 @Service
-public class DrawGuess extends MessageHandler implements IWebSocketGameService<DrawGuessContext> {
+public class DrawGuess extends CodeMessageHandler implements IWebSocketGameService<DrawGuessContext> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
     public static final String IDENTIFY = "draw_guess";
@@ -51,13 +50,13 @@ public class DrawGuess extends MessageHandler implements IWebSocketGameService<D
     private final ThreadPoolExecutor executor;
 
     @Autowired
-    public DrawGuess(List<RequestHandler> handlers,
+    public DrawGuess(List<DrawGuessRequestHandler> handlers,
                      DSLContext sql,
                      ThreadPoolExecutor executor) {
         this.sql = sql;
         this.executor = executor;
-        HashMap<Integer, RequestHandler> handlerMap = new HashMap<>();
-        for (RequestHandler handler : handlers) {
+        Map<Integer, RequestHandler<?>> handlerMap = new HashMap<>();
+        for (DrawGuessRequestHandler handler : handlers) {
             for (DrawCode drawCode : handler.supported()) {
                 handlerMap.put(drawCode.getCode(), handler);
             }
@@ -109,21 +108,6 @@ public class DrawGuess extends MessageHandler implements IWebSocketGameService<D
         info.setWordType(drawWord.getWordTip());
         info.setWordCount(drawWord.getWord().length());
         return info;
-    }
-
-
-    /**
-     * 处理web socket请求
-     *
-     * @param payload 请求内容
-     * @param session 会话
-     * @return 处理结果字符串
-     */
-    @Override
-    public Flux<MsgModel> handleRequest(String payload, WebSocketSession session) {
-        ApiRequest request = JSONObject.parseObject(payload, ApiRequest.class);
-        return handle(request, session);
-
     }
 
     private String generateUserName() {

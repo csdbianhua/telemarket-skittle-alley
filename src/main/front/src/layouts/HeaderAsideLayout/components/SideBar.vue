@@ -1,12 +1,12 @@
 <template>
     <scroll-bar>
         <div class="logo">
-            <img :src="img_logo" width="40">
-            <span class="site-name"><router-link to="/">Telemarket</router-link></span>
+            <router-link to="/"><img style="margin-top: 20px;" :src="img_logo" width="40"></router-link>
         </div>
         <el-menu
                 mode="vertical"
                 :show-timeout="200"
+                :collapse="true"
                 background-color="#00142a"
                 text-color="hsla(0, 0%, 100%, .65)"
                 active-text-color="#409EFF"
@@ -78,7 +78,7 @@
     .sidebar-container {
         box-shadow: 2px 0 6px rgba(0, 21, 41, .35);
         transition: width 0.28s;
-        width: 256px !important;
+        width: 60px !important;
         height: 100%;
         position: fixed;
         top: 0;

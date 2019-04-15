@@ -1,6 +1,21 @@
 <template>
-    <el-container id="container">
+    <el-container>
+        <el-col :span="19" id="container">
 
+        </el-col>
+        <el-col :span="5">
+            <el-row>
+                <ul class="chat-thread" ref="charThread">
+                    <li v-for="msg in msgList"><span v-html="msg"></span></li>
+                </ul>
+            </el-row>
+            <el-row>
+                <el-input type="text" v-model="inputMsg" v-on:keyup.enter.native="sendText">
+                    <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
+                </el-input>
+
+            </el-row>
+        </el-col>
     </el-container>
 </template>
 <script>
@@ -13,7 +28,7 @@
   const resourcePattern = new RegExp('/.*?/.*?_(\\d+)\\.\\w*?\\.?\\w+?');
   const PI = Math.PI;
   const WIDTH = 1400;
-  const HEIGHT = 800;
+  const HEIGHT = 900;
 
   let Application = PIXI.Application,
       loader = PIXI.loader,
@@ -493,17 +508,91 @@
         eventList: [],
         eventResident: {},
         keyboardListeners: [],
+        inputMsg: '',
+        msgList: [],
+        websocket: null,
       };
     },
     computed: {},
     watch: {},
     methods: {
+      initWebsocket() {
+        let websocket = this.websocket = new WebSocket(`ws://${window.location.host}/ws/games/nos`);
+        let that = this;
+        let msgProcessors = {
+          '1': function(res) { // move
+            let data = res.data;
+            that.draw(data.x, data.y, data.isBegin);
+          },
+          '2': function() { // clear
+            that.clearArea();
+          },
+          '3': function(res) { // change brush
+            let data = res.data;
+            that.ctxGame[data.type] = data.value;
+          },
+          '4': function(res) { // msg
+            let data = res.data;
+            if (Array.isArray(data)) {
+              data.forEach(function(val) {
+                that.msgList.push(val);
+              });
+            } else {
+              that.msgList.append(data);
+            }
+          },
+          '10': function(res) { // join
+            let data = res.data;
+            if (data.assign) {
+              that.initCtx(data);
+            } else {
+              that.addOrUpdateUser(data.info);
+            }
+          },
+          '11': function(res) { // ready
+            let data = res.data;
+            that.addOrUpdateUser(data);
+          },
+          '12': function(res) { // leave
+            that.removeUser(res.data);
+          },
+          '13': function(res) { // change name
+            that.addOrUpdateUser(res.data);
+          },
+          '20': function(res) { // update ctx
+            that.updateCtx(res.data);
+          },
+        };
+        websocket.onmessage = function(event) {
+          if (event.data[0] !== '{') {
+            return;
+          }
+          let res = JSON.parse(event.data);
+          msgProcessors[res.code.toString()](res);
+        };
+        websocket.onopen = function() {
+          that.$message('连接成功');
+        };
+        websocket.onclose = function(error) {
+          that.$message.error('服务器连接失败，请刷新页面');
+          console.error(error);
+        };
+        websocket.onerror = function(err) {
+          console.error('错误' + err);
+        };
+      },
       // 子弹设计 需要重构到武器类中
       shootBullet(options) {
         let bullet = new Bullet(this.resourceMap.bullet, options, this);
         resources[this.resourceMap.sound.rifle[0]].sound.play();
         this.app.stage.addChild(bullet.container);
         this.items.add(bullet);
+      },
+      sendText() {
+        if (this.inputMsg) {
+          this.websocket.send(JSON.stringify({code: 4, msg: this.inputMsg}));
+          this.inputMsg = '';
+        }
       },
       loadAllResource(resourcesMap) {
         let that = this;
@@ -520,6 +609,7 @@
         return Object.values(obj).map(o => this.flatObjectToArray(o)).flat();
       },
       afterLoadResources() {
+        this.initWebsocket();
         this.me = new Person(this.resourceMap.person, this);
         this.me.registListener();
         this.app.stage.addChild(this.me.container);
@@ -595,9 +685,17 @@
         item.destroy && item.destroy();
       }
       this.app.destroy();
+      this.websocket.close();
     },
   };
 </script>
 <style lang="scss" scoped>
-
+    .chat-thread {
+        list-style: none;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-left: 0;
+        height: 830px;
+        width: 400px;
+    }
 </style>

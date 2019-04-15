@@ -8,7 +8,6 @@ import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.MsgModel;
 import telemarketer.skittlealley.model.game.drawguess.DrawCode;
-import telemarketer.skittlealley.service.RequestHandler;
 
 /**
  * 原样直接传达信息
@@ -18,7 +17,7 @@ import telemarketer.skittlealley.service.RequestHandler;
  * Email: imyijie@outlook.com
  */
 @Service
-public class EchoHandler implements RequestHandler {
+public class EchoHandler implements DrawGuessRequestHandler {
 
     @Override
     public Flux<MsgModel> apply(ApiRequest request, WebSocketSession session) {
