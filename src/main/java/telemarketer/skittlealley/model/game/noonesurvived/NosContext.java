@@ -9,8 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class NosContext implements GameCtx {
 
     private final AtomicLong idGenerator = new AtomicLong(0);
-
-    private Map<Long, NosItem> itemMap = new ConcurrentHashMap<>();
+    private final Map<Long, NosItem> itemMap = new ConcurrentHashMap<>();
 
     public NosPlayer newPlayer() {
         NosPlayer player = new NosPlayer(idGenerator.getAndIncrement());

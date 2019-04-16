@@ -6,7 +6,7 @@
         <el-col :span="5">
             <el-row>
                 <ul class="chat-thread" ref="charThread">
-                    <li v-for="msg in msgList"><span v-html="msg"></span></li>
+                    <li v-for="msg in msgList"><b>{{ msg.name }} </b>: {{ msg.content }}</li>
                 </ul>
             </el-row>
             <el-row>
@@ -29,6 +29,7 @@
   const PI = Math.PI;
   const WIDTH = 1400;
   const HEIGHT = 900;
+  const MAX_MSG_COUNT = 50;
 
   let Application = PIXI.Application,
       loader = PIXI.loader,
@@ -38,8 +39,119 @@
       InteractionManager = PIXI.interaction.InteractionManager,
       Sprite = PIXI.Sprite;
 
+  function hitTestRectangle(r1, r2) {
+
+    let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+
+    hit = false;
+
+    r1.centerX = r1.x + r1.width / 2;
+    r1.centerY = r1.y + r1.height / 2;
+    r2.centerX = r2.x + r2.width / 2;
+    r2.centerY = r2.y + r2.height / 2;
+
+    r1.halfWidth = r1.width / 2;
+    r1.halfHeight = r1.height / 2;
+    r2.halfWidth = r2.width / 2;
+    r2.halfHeight = r2.height / 2;
+
+    vx = r1.centerX - r2.centerX;
+    vy = r1.centerY - r2.centerY;
+
+    combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+    combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+
+    if (Math.abs(vx) < combinedHalfWidths) {
+      hit = Math.abs(vy) < combinedHalfHeights;
+    } else {
+      hit = false;
+    }
+    return hit;
+  }
+
   class Lifecycle {
     destroy() {}
+  }
+
+  class Item extends Lifecycle {
+
+    constructor() {
+      super();
+      this._status = new Set();
+      this.spriteMap = {};
+    }
+
+    _removeStatus(status) {
+      if (this._status.delete(status)) {
+        this._setVisibleStatus(status, false);
+      }
+    }
+
+    _setVisibleStatus(status, flag) {
+      this.spriteMap[status].visible = flag;
+    }
+
+    /**
+     * 删除某个状态
+     * @param status 状态
+     */
+    deleteStatus(status) {
+      this._removeStatus(status);
+      this._setVisibleStatus(this.status, true);
+    }
+
+    get status() {
+      let result = null;
+      let priority;
+      let STATUS_PRIORITY = this._getStatusPriority();
+      this._status.forEach(e => {
+        if (!priority || STATUS_PRIORITY[e] > priority) {
+          result = e;
+          priority = STATUS_PRIORITY[e];
+        }
+      });
+      return result || this._getDefaultStatus();
+    };
+
+    /**
+     * 设置已存在的状态
+     * @param newStatus
+     * @private
+     */
+    _setExistsStatus(newStatus) {
+
+    }
+
+    /**
+     * 获得状态优先级
+     * @private
+     */
+    _getStatusPriority() {
+
+    }
+
+    /**
+     * 获得默认状态
+     * @private
+     */
+    _getDefaultStatus() {
+
+    }
+
+    set status(newStatus) {
+      if (this._status.has(newStatus)) {
+        return;
+      }
+      this._setExistsStatus(newStatus);
+      this._status.add(newStatus);
+      let nowStatus = this.status;
+      for (let status of this._status) {
+        this._setVisibleStatus(status, status === nowStatus);
+      }
+    }
+
+    nextAction() {}
+
   }
 
   class MouseListener extends Lifecycle {
@@ -109,35 +221,40 @@
     LEFT: 180,
   };
 
-  const ZOMBIE_STATUS = {
-    IDLE: 'idle', MOVE: 'move', ATTACK: 'attack',
-  };
+  class Zombie extends Item {
+    static STATUS = {
+      IDLE: 'idle', MOVE: 'move', ATTACK: 'attack',
+    };
 
-  /**
-   * 任务状态优先级
-   * @type {{}}
-   */
-  const ZOMBIE_STATUS_PRIORITY = {
-    'idle': 0,
-    'move': 1,
-    'attack': 2,
-  };
+    /**
+     * 任务状态优先级
+     * @type {{}}
+     */
+    static STATUS_PRIORITY = {
+      'idle': 0,
+      'move': 1,
+      'attack': 2,
+    };
 
-  class Zombie {
     static speed = 4;
 
     constructor(resourceMap, ctx) {
-      // 标识物体自身状态(ZOMBIE_STATUS)，可能存在多个状态，优先级根据 ZOMBIE_STATUS_PRIORITY 获取
-      this._status = new Set();
-      // 移动方位
-      this.spriteMap = {};
+      super();
       this.container = this._initContainer(resourceMap);
       this.frameIndex = 0;
       this.targetPosition = {
         x: this.container.x + 1, y: this.container.y,
       };
       this.ctx = ctx;
-      this.status = ZOMBIE_STATUS.IDLE;
+      this.status = Zombie.STATUS.IDLE;
+    }
+
+    _getStatusPriority() {
+      return Zombie.STATUS_PRIORITY;
+    }
+
+    _getDefaultStatus() {
+      return Zombie.STATUS.IDLE;
     }
 
     _initContainer(resourceMap) {
@@ -164,25 +281,46 @@
       parentContainer.scale.set(0.5, 0.5);
       return parentContainer;
     }
+
+    nextAction() {
+      let status = this.status;
+      let sprites = this.spriteMap[status].children;
+      let length = sprites.length;
+      let frameIndex = this.frameIndex++;
+      if (frameIndex >= length) {
+        frameIndex = this.frameIndex = 0;
+      }
+      for (let i = 0; i < length; i++) {
+        let child = sprites[i];
+        if (i === frameIndex) {
+          child.visible = true;
+        } else if (child.visible) {
+          child.visible = false;
+        }
+      }
+      // this.container.rotation = this.angle;
+
+      if (this._status.has(Zombie.STATUS.MOVE)) {
+        // todo
+      }
+    }
   }
 
-  const PERSON_STATUS = {
-    IDLE: 'idle', MOVE: 'move', SHOOT: 'shoot', RELOAD: 'reload',
-  };
+  class Person extends Item {
+    static STATUS = {
+      IDLE: 'idle', MOVE: 'move', SHOOT: 'shoot', RELOAD: 'reload',
+    };
 
-  /**
-   * 任务状态优先级
-   * @type {{}}
-   */
-  const PERSON_STATUS_PRIORITY = {
-    'idle': 0,
-    'move': 1,
-    'shoot': 2,
-    'reload': 3,
-  };
-
-  class Person {
-
+    /**
+     * 任务状态优先级
+     * @type {{}}
+     */
+    static STATUS_PRIORITY = {
+      'idle': 0,
+      'move': 1,
+      'shoot': 2,
+      'reload': 3,
+    };
     static SPEED = 5;
 
     /**
@@ -191,6 +329,7 @@
      * @param ctx vue上下文
      */
     constructor(resourceMap, ctx) {
+      super();
       // 标识物体自身状态(PERSON_STATUS)，可能存在多个状态，优先级根据 PERSON_STATUS_PRIORITY 获取
       this._status = new Set();
       // 移动方位
@@ -203,72 +342,40 @@
       };
       this.lastShootTime = Date.now();
       this.ctx = ctx;
-      this.status = PERSON_STATUS.IDLE;
+      this.status = Person.STATUS.IDLE;
     }
 
-    _removeStatus(status) {
-      if (this._status.delete(status)) {
-        this._unVisibleStatus(status);
-      }
-    }
-
-    _unVisibleStatus(status) {
-      this.spriteMap[status].visible = false;
-    }
-
-    /**
-     * 删除某个状态
-     * @param status 状态
-     */
-    deleteStatus(status) {
-      this._removeStatus(status);
-      this.spriteMap[this.status].visible = true;
-    }
-
-    set status(newStatus) {
-      if (this._status.has(newStatus)) {
-        return;
-      }
+    _setExistsStatus(newStatus) {
       if (this._status.size === 0) {
-        this._unVisibleStatus(PERSON_STATUS.IDLE);
+        this._setVisibleStatus(Person.STATUS.IDLE, false);
       }
       switch (newStatus) {
-        case PERSON_STATUS.IDLE:
-          this._removeStatus(PERSON_STATUS.MOVE);
+        case Person.STATUS.IDLE:
+          this._removeStatus(Person.STATUS.MOVE);
           break;
-        case PERSON_STATUS.MOVE:
-          this._removeStatus(PERSON_STATUS.IDLE);
+        case Person.STATUS.MOVE:
+          this._removeStatus(Person.STATUS.IDLE);
           break;
-        case PERSON_STATUS.SHOOT:
-          this._removeStatus(PERSON_STATUS.RELOAD);
+        case Person.STATUS.SHOOT:
+          this._removeStatus(Person.STATUS.RELOAD);
           break;
-        case PERSON_STATUS.RELOAD:
-          this._removeStatus(PERSON_STATUS.SHOOT);
+        case Person.STATUS.RELOAD:
+          this._removeStatus(Person.STATUS.SHOOT);
           break;
       }
-
-      for (let status of this._status) {
-        this._unVisibleStatus(status);
-      }
-      this._status.add(newStatus);
-      this.spriteMap[this.status].visible = true;
     }
 
-    get status() {
-      let result = null;
-      let priority;
-      this._status.forEach(e => {
-        if (!priority || PERSON_STATUS_PRIORITY[e] > priority) {
-          result = e;
-          priority = PERSON_STATUS_PRIORITY[e];
-        }
-      });
-      return result || PERSON_STATUS.IDLE;
-    };
+    _getStatusPriority() {
+      return Person.STATUS_PRIORITY;
+    }
+
+    _getDefaultStatus() {
+      return Person.STATUS.IDLE;
+    }
 
     set direction(newVal) {
       this._direction.push(newVal);
-      this.status = PERSON_STATUS.MOVE;
+      this.status = Person.STATUS.MOVE;
     }
 
     deleteDirection(val) {
@@ -277,7 +384,7 @@
         this._direction.splice(index, 1);
       }
       if (this._direction.length === 0) {
-        this.deleteStatus(PERSON_STATUS.MOVE);
+        this.deleteStatus(Person.STATUS.MOVE);
       }
     }
 
@@ -322,13 +429,13 @@
 
       let mouseListener = new MouseListener(this.ctx.interactionManager, {
         'pointerup': function() {
-          that.deleteStatus(PERSON_STATUS.SHOOT);
+          that.deleteStatus(Person.STATUS.SHOOT);
         },
         'pointermove': function(e) {
           that.targetPosition = e.data.global;
         },
         'pointerdown': function() {
-          that.status = PERSON_STATUS.SHOOT;
+          that.status = Person.STATUS.SHOOT;
         },
       });
 
@@ -356,7 +463,7 @@
         }
       }
       this.container.rotation = this.angle;
-      if (this._status.has(PERSON_STATUS.MOVE)) {
+      if (this._status.has(Person.STATUS.MOVE)) {
         switch (this.direction) {
           case DIRECTION.RIGHT:
             if (this.container.x >= WIDTH) { return; }
@@ -376,7 +483,7 @@
             break;
         }
       }
-      if (this._status.has(PERSON_STATUS.SHOOT)) {
+      if (this._status.has(Person.STATUS.SHOOT)) {
         if (Date.now() - this.lastShootTime > 200) {
           this.ctx.shootBullet({
             angle: this.angle,
@@ -475,9 +582,18 @@
       if (this.container.x >= WIDTH + 200
           || this.container.y >= HEIGHT + 200
           || this.container.x <= -200
-          || this.container.y <= -200) {
+          || this.container.y <= -200 || this._hitAnyThing()) {
         this.destroy();
       }
+    }
+
+    _hitAnyThing() {
+      for (let item of this.ctx.items) {
+        if (item instanceof Zombie && hitTestRectangle(this.container, item.container)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     destroy() {
@@ -514,23 +630,22 @@
       };
     },
     computed: {},
-    watch: {},
+    watch: {
+      msgList: function() {
+        if (this.msgList.length > MAX_MSG_COUNT) {
+          this.msgList.splice(0, this.msgList.length - MAX_MSG_COUNT);
+        }
+        let charThread = this.$refs.charThread;
+        process.nextTick(function() {
+          charThread.scrollTop = charThread.scrollHeight;
+        });
+      },
+    },
     methods: {
       initWebsocket() {
         let websocket = this.websocket = new WebSocket(`ws://${window.location.host}/ws/games/nos`);
         let that = this;
         let msgProcessors = {
-          '1': function(res) { // move
-            let data = res.data;
-            that.draw(data.x, data.y, data.isBegin);
-          },
-          '2': function() { // clear
-            that.clearArea();
-          },
-          '3': function(res) { // change brush
-            let data = res.data;
-            that.ctxGame[data.type] = data.value;
-          },
           '4': function(res) { // msg
             let data = res.data;
             if (Array.isArray(data)) {
@@ -538,29 +653,8 @@
                 that.msgList.push(val);
               });
             } else {
-              that.msgList.append(data);
+              that.msgList.push(data);
             }
-          },
-          '10': function(res) { // join
-            let data = res.data;
-            if (data.assign) {
-              that.initCtx(data);
-            } else {
-              that.addOrUpdateUser(data.info);
-            }
-          },
-          '11': function(res) { // ready
-            let data = res.data;
-            that.addOrUpdateUser(data);
-          },
-          '12': function(res) { // leave
-            that.removeUser(res.data);
-          },
-          '13': function(res) { // change name
-            that.addOrUpdateUser(res.data);
-          },
-          '20': function(res) { // update ctx
-            that.updateCtx(res.data);
           },
         };
         websocket.onmessage = function(event) {
@@ -568,7 +662,10 @@
             return;
           }
           let res = JSON.parse(event.data);
-          msgProcessors[res.code.toString()](res);
+          let msgProcessor = msgProcessors[res.code.toString()];
+          if (msgProcessor) {
+            msgProcessor(res);
+          }
         };
         websocket.onopen = function() {
           that.$message('连接成功');
@@ -614,6 +711,10 @@
         this.me.registListener();
         this.app.stage.addChild(this.me.container);
         this.items.add(this.me);
+
+        let zombie = new Zombie(this.resourceMap.zombie, this);
+        this.app.stage.addChild(zombie.container);
+        this.items.add(zombie);
 
         let items = this.items;
         this.eventResident['itemAction'] = function() {
@@ -680,12 +781,16 @@
       this.app.ticker.add(delta => gameLoop(delta));
     },
     destroyed() {
-      this.interactionManager && this.interactionManager.destroy();
-      for (let item of this.items) {
-        item.destroy && item.destroy();
+      try {
+        this.interactionManager && this.interactionManager.destroy();
+        for (let item of this.items) {
+          item.destroy && item.destroy();
+        }
+        this.app.destroy();
+      } finally {
+        this.websocket.close();
       }
-      this.app.destroy();
-      this.websocket.close();
+
     },
   };
 </script>
@@ -696,6 +801,18 @@
         overflow-x: hidden;
         padding-left: 0;
         height: 830px;
-        width: 400px;
+    }
+
+    .chat-thread li {
+        position: relative;
+        clear: both;
+        display: inline-block;
+        padding: 16px 20px 16px 20px;
+        font-size: 12px;
+        word-break: break-all;
+        border-radius: 10px;
+        background-color: rgba(25, 147, 147, 0.2);
+        margin: 0 15px 20px 0;
+        color: #0AD5C1;
     }
 </style>

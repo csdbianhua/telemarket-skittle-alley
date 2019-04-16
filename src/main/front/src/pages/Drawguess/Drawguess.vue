@@ -296,7 +296,7 @@
                 that.msgList.push(val);
               });
             } else {
-              that.msgList.append(data);
+              that.msgList.push(data);
             }
           },
           '10': function(res) { // join

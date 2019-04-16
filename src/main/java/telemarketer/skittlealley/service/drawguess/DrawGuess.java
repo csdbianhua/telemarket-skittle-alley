@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
 
@@ -44,7 +43,7 @@ public class DrawGuess extends CodeMessageHandler implements IWebSocketGameServi
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
     public static final String IDENTIFY = "draw_guess";
-    private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
+    private static final DrawGuessContext context = new DrawGuessContext().setStatus(DrawGameStatus.READY);
 
     private final DSLContext sql;
     private final ThreadPoolExecutor executor;
@@ -72,10 +71,6 @@ public class DrawGuess extends CodeMessageHandler implements IWebSocketGameServi
      */
     @Override
     public Mono<DrawGuessContext> connected(WebSocketSession session) {
-        if (ctx.get() == null) {
-            ctx.compareAndSet(null, new DrawGuessContext().setStatus(DrawGameStatus.READY));
-        }
-        DrawGuessContext context = this.ctx.get();
         Map<String, Object> attributes = session.getAttributes();
         DrawPlayerInfo info = new DrawPlayerInfo();
         info.setName(generateUserName());
@@ -93,7 +88,6 @@ public class DrawGuess extends CodeMessageHandler implements IWebSocketGameServi
      */
     @Override
     public Flux<MsgModel> closed(WebSocketSession session) {
-        DrawGuessContext context = this.ctx.get();
         context.removePlayer(session.getId());
         context.decrRoomPeopleNumber();
         return Flux.just(MsgModel.content(ApiResponse.code(DrawCode.USER_LEFT.getCode(), session.getAttributes().get("info"))));

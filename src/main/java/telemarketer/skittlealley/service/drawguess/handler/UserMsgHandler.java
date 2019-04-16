@@ -13,7 +13,7 @@ import telemarketer.skittlealley.model.game.drawguess.*;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_MSG;
+import static telemarketer.skittlealley.model.game.drawguess.DrawCode.MSG;
 
 /**
  * 处理用户发送的信息
@@ -26,7 +26,7 @@ import static telemarketer.skittlealley.model.game.drawguess.DrawCode.DRAW_MSG;
 public class UserMsgHandler implements DrawGuessRequestHandler {
     @Override
     public DrawCode[] supported() {
-        return new DrawCode[]{DRAW_MSG};
+        return new DrawCode[]{MSG};
     }
 
     @Override
@@ -50,7 +50,7 @@ public class UserMsgHandler implements DrawGuessRequestHandler {
         } else {
             msgs.add("<b>" + info.getName() + "</b>: " + msg);
         }
-        return Flux.just(MsgModel.content(ApiResponse.builder().setCode(DRAW_MSG.getCode()).setData(msgs)));
+        return Flux.just(MsgModel.content(ApiResponse.builder().setCode(MSG.getCode()).setData(msgs)));
     }
 
     private void processGussPerson(DrawPlayerInfo info, DrawGuessContext ctx, String msg, ArrayList<String> msgs) {
