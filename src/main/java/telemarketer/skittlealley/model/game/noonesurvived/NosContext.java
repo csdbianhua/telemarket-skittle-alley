@@ -18,4 +18,10 @@ public class NosContext implements GameCtx {
         return player;
     }
 
+    public NosZombie newZombie() {
+        NosZombie zombie = new NosZombie(idGenerator.getAndIncrement());
+        itemMap.put(zombie.getId(), zombie);
+        return zombie;
+    }
+
 }
