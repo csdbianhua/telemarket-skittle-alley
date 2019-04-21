@@ -45,6 +45,7 @@ public class NoOneSurvived extends CodeMessageHandler implements IWebSocketGameS
         userInfo.setId(session.getId());
         userInfo.setName(RandomStringUtils.random(5, true, true));
         session.getAttributes().put("info", userInfo);
+        session.getAttributes().put("ctx", context);
         return Mono.just(context);
     }
 

@@ -1,21 +1,34 @@
 <template>
     <el-container>
-        <el-col :span="19" id="container">
-
-        </el-col>
-        <el-col :span="5">
+        <el-main>
             <el-row>
-                <ul class="chat-thread" ref="charThread">
-                    <li v-for="msg in msgList"><b>{{ msg.name }} </b>: {{ msg.content }}</li>
-                </ul>
+                <el-col :span="19" id="container">
+
+                </el-col>
+                <el-col :span="5">
+                    <el-row>
+                        <ul class="chat-thread" ref="charThread">
+                            <li v-for="msg in msgList"><b>{{ msg.name }} </b>: {{ msg.content }}</li>
+                        </ul>
+                    </el-row>
+                    <el-row>
+                        <el-input type="text" v-model="inputMsg" v-on:keyup.enter.native="sendText">
+                            <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
+                        </el-input>
+
+                    </el-row>
+                </el-col>
             </el-row>
             <el-row>
-                <el-input type="text" v-model="inputMsg" v-on:keyup.enter.native="sendText">
-                    <el-button slot="append" plain @click="sendText" type="primary">发送</el-button>
-                </el-input>
-
+                <el-col :span="19">
+                    <el-button type="success" size="mini">赠送火箭</el-button>
+                </el-col>
+                <el-col :span="5">
+                    <el-button @click="userReady" size="mini" type="primary">立即加入</el-button>
+                </el-col>
             </el-row>
-        </el-col>
+        </el-main>
+
     </el-container>
 </template>
 <script>
@@ -39,6 +52,12 @@
       InteractionManager = PIXI.interaction.InteractionManager,
       Sprite = PIXI.Sprite;
 
+  /**
+   * 碰撞检测
+   * @param r1 container1
+   * @param r2 container2
+   * @returns {boolean} 是否碰撞
+   */
   function hitTestRectangle(r1, r2) {
 
     let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
@@ -67,6 +86,16 @@
       hit = false;
     }
     return hit;
+  }
+
+  function buildRequest(code, content) {
+    if (content) {
+      content = typeof content === 'string' ? content : JSON.stringify(content);
+    }
+    return {
+      code: code,
+      content: content,
+    };
   }
 
   class Lifecycle {
@@ -327,15 +356,16 @@
      * 构造Person对象
      * @param resourceMap 资源map, key为不同的资源名称，value为精灵数组
      * @param ctx vue上下文
+     * @param options 参数
      */
-    constructor(resourceMap, ctx) {
+    constructor(resourceMap, ctx, options) {
       super();
       // 标识物体自身状态(PERSON_STATUS)，可能存在多个状态，优先级根据 PERSON_STATUS_PRIORITY 获取
       this._status = new Set();
       // 移动方位
       this._direction = [];
       this.spriteMap = {};
-      this.container = this._initContainer(resourceMap.rifle);
+      this.container = this._initContainer(resourceMap.rifle, options);
       this.frameIndex = 0;
       this.targetPosition = {
         x: this.container.x + 1, y: this.container.y,
@@ -498,11 +528,12 @@
 
     /**
      * 初始化 container
-     * @param resourceMap
+     * @param resourceMap 模型资源
+     * @param options 参数
      * @returns {PIXI.Container}
      * @private
      */
-    _initContainer(resourceMap) {
+    _initContainer(resourceMap, options) {
       let parentContainer = new Container();
       let spriteMap = this.spriteMap;
       parentContainer.visible = true;
@@ -521,8 +552,8 @@
         childContainer.visible = false;
         parentContainer.addChild(childContainer);
       });
-      parentContainer.x = 200;
-      parentContainer.y = 200;
+      parentContainer.x = options.x;
+      parentContainer.y = options.y;
       parentContainer.scale.set(0.5, 0.5);
       return parentContainer;
     }
@@ -642,6 +673,19 @@
       },
     },
     methods: {
+      userReady() {
+        this.sendToServer(buildRequest(11));
+      },
+      systemAddMe(options) {
+        console.log(this.resourceMap.person);
+        this.me = new Person(this.resourceMap.person, this, options);
+        this.me.registListener();
+        this.app.stage.addChild(this.me.container);
+        this.items.add(this.me);
+      },
+      sendToServer(msg) {
+        this.websocket.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      },
       initWebsocket() {
         let websocket = this.websocket = new WebSocket(`ws://${window.location.host}/ws/games/nos`);
         let that = this;
@@ -655,6 +699,10 @@
             } else {
               that.msgList.push(data);
             }
+          },
+          '11': function(res) {
+            let data = res.data;
+            that.systemAddMe(data);
           },
         };
         websocket.onmessage = function(event) {
@@ -706,12 +754,6 @@
         return Object.values(obj).map(o => this.flatObjectToArray(o)).flat();
       },
       afterLoadResources() {
-        this.initWebsocket();
-        this.me = new Person(this.resourceMap.person, this);
-        this.me.registListener();
-        this.app.stage.addChild(this.me.container);
-        this.items.add(this.me);
-
         let zombie = new Zombie(this.resourceMap.zombie, this);
         this.app.stage.addChild(zombie.container);
         this.items.add(zombie);
@@ -725,6 +767,7 @@
       },
     },
     created() {
+      this.initWebsocket();
     },
     mounted() {
       this.interactionManager = new InteractionManager(this.app.renderer);
@@ -788,7 +831,7 @@
         }
         this.app.destroy();
       } finally {
-        this.websocket.close();
+        this.websocket && this.websocket.close();
       }
 
     },

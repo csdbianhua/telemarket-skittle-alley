@@ -13,6 +13,8 @@ public class NosContext implements GameCtx {
 
     public NosPlayer newPlayer() {
         NosPlayer player = new NosPlayer(idGenerator.getAndIncrement());
+        player.x = 200;
+        player.y = 200;
         itemMap.put(player.getId(), player);
         return player;
     }
