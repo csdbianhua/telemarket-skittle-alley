@@ -5,12 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
-import org.springframework.web.reactive.result.view.AbstractUrlBasedView;
-import org.springframework.web.reactive.result.view.UrlBasedViewResolver;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.WebSocketService;
 import org.springframework.web.reactive.socket.server.support.HandshakeWebSocketService;
@@ -26,7 +24,7 @@ import java.util.Map;
  *
  * @author hason
  */
-@Service
+@Configuration(proxyBeanMethods = false)
 public class WebConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebConfig.class);
 
@@ -38,8 +36,8 @@ public class WebConfig {
     }
 
     @Bean
-    public WebSocketHandlerAdapter handlerAdapter() {
-        return new WebSocketHandlerAdapter(webSocketService());
+    public WebSocketHandlerAdapter handlerAdapter(WebSocketService webSocketService) {
+        return new WebSocketHandlerAdapter(webSocketService);
     }
 
     @Bean
@@ -63,13 +61,6 @@ public class WebConfig {
         mapping.setOrder(Ordered.HIGHEST_PRECEDENCE);
         mapping.setUrlMap(map);
         return mapping;
-    }
-
-    @Bean
-    public UrlBasedViewResolver viewResolver() {
-        UrlBasedViewResolver viewResolver = new UrlBasedViewResolver();
-        viewResolver.setViewClass(AbstractUrlBasedView.class);
-        return viewResolver;
     }
 
 }

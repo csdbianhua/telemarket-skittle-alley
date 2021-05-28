@@ -39,15 +39,15 @@
   };
 </script>
 
-<style lang="scss" scoped>
-    .scroll-container {
-        width: 100%;
-        height: 100%;
-        background-color: #00142a;
+<style lang="css" scoped>
+.scroll-container {
+  width: 100%;
+  height: 100%;
+  background-color: #00142a;
+}
+.scroll-container .scroll-wrapper {
+  position: absolute;
+  width: 100%;
+}
 
-        .scroll-wrapper {
-            position: absolute;
-            width: 100%;
-        }
-    }
 </style>

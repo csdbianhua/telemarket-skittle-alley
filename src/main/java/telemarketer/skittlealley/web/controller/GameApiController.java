@@ -1,12 +1,12 @@
 package telemarketer.skittlealley.web.controller;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
-import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
+import telemarketer.skittlealley.model.game.drawguess.DrawWord;
 import telemarketer.skittlealley.service.game.DrawGuess;
 
 
@@ -22,14 +22,12 @@ public class GameApiController {
     }
 
     @PostMapping("/draw_guess/word_submit")
-    public Mono<String> drawGuessWordSubmitPost(DrawWord drawWord) {
-        return Mono.fromCompletionStage(drawGuess.saveWord(drawWord))
-                .map(i -> "新增成功")
-                .onErrorResume(RuntimeException.class, e -> {
-                    log.error("[你画我猜]提交词汇失败", e);
-                    return Mono.just("失败");
-                });
-
+    public String drawGuessWordSubmitPost(DrawWord drawWord) {
+        if (StringUtils.isAnyBlank(drawWord.getWord(), drawWord.getWordTip())) {
+            return "不能有空的";
+        }
+        drawGuess.saveWord(drawWord);
+        return "新增成功";
     }
 
 }

@@ -1,7 +1,9 @@
 package telemarketer.skittlealley.web.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.reactive.result.view.RedirectView;
 
 /**
  * @author hason
@@ -13,8 +15,8 @@ public class IndexController {
 
 
     @RequestMapping("/")
-    public String index() {
-        return "redirect:/index.html";
+    public RedirectView index() {
+        return new RedirectView("/index.html", HttpStatus.MOVED_PERMANENTLY);
     }
 
 

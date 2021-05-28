@@ -21,23 +21,22 @@
   };
 </script>
 
-<style lang="scss" scoped>
-    .app-wrapper {
-        position: relative;
-        height: 100%;
-        width: 100%;
+<style lang="css" scoped>
+.app-wrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+.app-wrapper:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.main-container {
+  min-height: 100vh;
+  transition: margin-left 0.28s;
+  margin-left: 256px;
+  background-color: #f0f2f5;
+}
 
-        &:after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-    }
-
-    .main-container {
-        min-height: 100vh;
-        transition: margin-left 0.28s;
-        margin-left: 256px;
-        background-color: #f0f2f5;
-    }
 </style>

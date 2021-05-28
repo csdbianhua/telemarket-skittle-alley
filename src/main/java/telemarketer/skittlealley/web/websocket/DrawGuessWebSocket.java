@@ -11,10 +11,9 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.Disposable;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import telemarketer.skittlealley.framework.annotation.WSHandler;
 import telemarketer.skittlealley.model.ApiResponse;
@@ -47,12 +46,9 @@ public class DrawGuessWebSocket implements WebSocketHandler {
     private static final MsgModel PING = new MsgModel("ping");
     private final Map<String, WebSocketSession> clients = Collections.synchronizedMap(new LinkedHashMap<>());
     private final DrawGuess drawGuess;
-    private final EmitterProcessor<MsgModel> processor = EmitterProcessor.create(false);
-    private final FluxSink<MsgModel> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
+    private final Sinks.Many<MsgModel> sink = Sinks.many().multicast().onBackpressureBuffer();
     private final Disposable heartBeat = Flux.interval(Duration.ofSeconds(15), Schedulers.newSingle("HeartBeat")).doOnNext(l -> {
-        if (clients.size() > 0) {
-            sink.next(PING);
-        }
+        sink.tryEmitNext(PING);
     }).subscribe();
 
     @Autowired
@@ -111,10 +107,9 @@ public class DrawGuessWebSocket implements WebSocketHandler {
      *
      * @param msg 信息
      * @param id  id
-     * @return mono
      */
     public void sendTo(String msg, String id) {
-        sink.next(new MsgModel(msg).setToId(id));
+        sink.tryEmitNext(new MsgModel(msg).setToId(id));
     }
 
 
@@ -125,7 +120,7 @@ public class DrawGuessWebSocket implements WebSocketHandler {
      * @param except 除开的id
      */
     public void broadcast(String msg, String except) {
-        sink.next(new MsgModel(msg).setExcept(except));
+        sink.tryEmitNext(new MsgModel(msg).setExcept(except));
     }
 
 
@@ -135,21 +130,21 @@ public class DrawGuessWebSocket implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        Mono<Void> flux = session.receive()
+        Mono<Void> receiveChannel = session.receive()
                 .doOnNext(msg -> handleTextMessage(session, msg))
                 .doOnError(throwable -> log.error("[DrawGuess]WebSocket error", throwable))
                 .doOnTerminate(() -> afterConnectionClosed(session))
                 .then();
-        Mono<Void> send = session.send(processor.filter(model -> model.isMatch(session.getId()))
+        Mono<Void> sendChannel = session.send(sink.asFlux().filter(model -> model.isMatch(session.getId()))
                 .map(model -> {
                     if (log.isDebugEnabled()) {
                         log.debug("[Websocket] msg: {} , to: {}", model.content, session.getId());
                     }
                     return session.textMessage(model.getContent());
                 }));
-        return Flux.merge(flux,
-                send,
-                afterConnectionEstablished(session).doOnNext(sink::next)
+        return Flux.merge(receiveChannel,
+                sendChannel,
+                afterConnectionEstablished(session).doOnNext(sink::tryEmitNext)
         ).then();
     }
 

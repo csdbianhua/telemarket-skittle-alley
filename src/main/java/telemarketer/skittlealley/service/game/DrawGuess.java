@@ -4,30 +4,24 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jooq.DSLContext;
-import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import telemarketer.skittlealley.framework.annotation.Game;
 import telemarketer.skittlealley.model.ApiRequest;
 import telemarketer.skittlealley.model.ApiResponse;
 import telemarketer.skittlealley.model.game.drawguess.*;
-import telemarketer.skittlealley.persist.tables.pojos.DrawWord;
 import telemarketer.skittlealley.service.common.MessageHandler;
 import telemarketer.skittlealley.service.common.RequestHandler;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static telemarketer.skittlealley.persist.Tables.DRAW_WORD;
 
 
 /**
@@ -44,17 +38,21 @@ public class DrawGuess extends MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DrawGuess.class);
 
     public static final String IDENTIFY = "draw_guess";
-    private AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
+    private final AtomicReference<DrawGuessContext> ctx = new AtomicReference<>(null);
+    private List<DrawWord> wordList;
 
-    private final DSLContext sql;
-    private final ThreadPoolExecutor executor;
-
-    @Autowired
-    public DrawGuess(List<RequestHandler> handlers,
-                     DSLContext sql,
-                     ThreadPoolExecutor executor) {
-        this.sql = sql;
-        this.executor = executor;
+    public DrawGuess(List<RequestHandler> handlers) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(new ClassPathResource("/data/draw_word.txt").getInputStream()));
+        String line;
+        List<DrawWord> list = new LinkedList<>();
+        while ((line = br.readLine()) != null) {
+            String[] parts = line.split(",");
+            DrawWord dw = new DrawWord();
+            dw.setWord(parts[0]);
+            dw.setWordTip(parts[1]);
+            list.add(dw);
+        }
+        wordList = new CopyOnWriteArrayList<>(list);
         HashMap<Integer, RequestHandler> handlerMap = new HashMap<>();
         for (RequestHandler handler : handlers) {
             for (DrawCode drawCode : handler.supported()) {
@@ -98,9 +96,8 @@ public class DrawGuess extends MessageHandler {
     }
 
     private DrawWordInfo randomWord() {
-        int count = sql.selectCount().from(DRAW_WORD).fetchOneInto(Integer.class);
-        int select = RandomUtils.nextInt(0, count);
-        DrawWord drawWord = sql.selectFrom(DRAW_WORD).where(DRAW_WORD.ID.ge(select)).limit(1).fetchOneInto(DrawWord.class);
+        int select = RandomUtils.nextInt(0, wordList.size());
+        DrawWord drawWord = wordList.get(select);
         DrawWordInfo info = new DrawWordInfo();
         info.setWord(drawWord.getWord());
         info.setWordType(drawWord.getWordTip());
@@ -256,13 +253,7 @@ public class DrawGuess extends MessageHandler {
         }
     }
 
-    public CompletionStage<Integer> saveWord(DrawWord word) {
-        return sql.insertInto(DRAW_WORD).values(DSL.defaultValue(), word.getWord(), word.getWordTip())
-                .executeAsync(executor)
-                .exceptionally(throwable
-                        ->
-                        sql.update(DRAW_WORD).set(DRAW_WORD.WORD_TIP, word.getWordTip())
-                                .where(DRAW_WORD.WORD.eq(word.getWord())).execute());
-
+    public void saveWord(DrawWord word) {
+        wordList.add(word);
     }
 }

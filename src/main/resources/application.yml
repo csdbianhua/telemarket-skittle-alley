@@ -1,17 +1,14 @@
 server:
   port: 9607
 spring:
-  datasource:
-    url: jdbc:h2:./db/skittle;mode=MySQL
-    platform: h2
-    data: classpath:sql/data.sql
-    schema: classpath:sql/database.sql
   webflux:
     static-path-pattern: /**
-    date-format: yyyy-MM-dd HH:mm:ss
+    format:
+      date: iso
   profiles:
     active: production
-  resources:
-    static-locations: classpath:dist,classpath:distprivate
+  web:
+    resources:
+      static-locations: classpath:/dist/
 logging:
   config: classpath:logback-${spring.profiles.active}.xml

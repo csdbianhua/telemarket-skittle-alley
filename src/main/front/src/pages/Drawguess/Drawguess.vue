@@ -554,54 +554,49 @@
     },
   };
 </script>
-<style lang="scss" scoped>
+<style lang="css" scoped>
+.chat-thread {
+  list-style: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-left: 0;
+  height: 620px;
+}
+.user-thread {
+  list-style: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-left: 0;
+  height: 620px;
+}
+.chat-thread li {
+  position: relative;
+  clear: both;
+  display: inline-block;
+  padding: 16px 20px 16px 20px;
+  font-size: 12px;
+  word-break: break-all;
+  border-radius: 10px;
+  background-color: rgba(25, 147, 147, 0.2);
+  margin: 0 15px 20px 0;
+  color: #0ad5c1;
+}
+.user-thread li {
+  position: relative;
+  clear: both;
+  display: inline-block;
+  padding: 16px 20px 16px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  word-break: break-all;
+  border-radius: 10px;
+  background-color: rgba(25, 147, 147, 0.2);
+  margin: 0 15px 20px 0;
+  color: #0ad5c1;
+}
+#canvas {
+  border: 2px solid #69c;
+  padding: 16px 0 16px 0;
+}
 
-    .chat-thread {
-        list-style: none;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-left: 0;
-        height: 620px;
-    }
-
-    .user-thread {
-        list-style: none;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding-left: 0;
-        height: 620px;
-    }
-
-    .chat-thread li {
-        position: relative;
-        clear: both;
-        display: inline-block;
-        padding: 16px 20px 16px 20px;
-        font-size: 12px;
-        word-break: break-all;
-        border-radius: 10px;
-        background-color: rgba(25, 147, 147, 0.2);
-        margin: 0 15px 20px 0;
-        color: #0AD5C1;
-    }
-
-    .user-thread li {
-        position: relative;
-        clear: both;
-        display: inline-block;
-        padding: 16px 20px 16px 20px;
-        font-size: 18px;
-        font-weight: bold;
-        word-break: break-all;
-        border-radius: 10px;
-        background-color: rgba(25, 147, 147, 0.2);
-        margin: 0 15px 20px 0;
-        color: #0AD5C1;
-    }
-
-    #canvas {
-        border: 2px solid #6699cc;
-        padding: 16px 0 16px 0;
-
-    }
 </style>

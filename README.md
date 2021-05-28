@@ -3,11 +3,7 @@ Telemarket-skittle-alley
 
 在线小游戏集合。
 
-数据库为嵌入式h2，存储到本地文件中。
-
-使用webflux、netty reactor、vue。
-
-本项目前后端分离，
+使用webflux、vue。
 
 ## 如何开发
 
@@ -48,5 +44,5 @@ npm run start
 
 也可以运行时自行提交
 
-> 如果运行过程无法正确地进行游戏状态迁移（具体表现为倒计时结束后无响应），请确认IDE在编译过程中执行了aspectj的编译。
+> 如果运行过程无法正确地进行游戏状态迁移（具体表现为倒计时结束后无响应，无法开始等等），请确认IDE在编译过程中执行了aspectj的编译（手动跑下 mvn aspectj:compile 也行）。
 
